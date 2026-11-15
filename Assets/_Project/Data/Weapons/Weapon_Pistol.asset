@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de3e35745e683b64dbd289d12f436931, type: 3}
+  m_Name: Weapon_Pistol
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Combat.WeaponDefinition
+  displayName: "\u62F3\u9283"
+  prefab: {fileID: 1036437582284551511, guid: 544c49e1b807d284da303b18daf09aa5, type: 3}
+  stance: 0
+  holster: 0
+  visualScale: 1.4
+  gripOffset: {x: 0, y: -0.01, z: 0.075}
+  shoulderOffset: {x: -0.02, y: -0.08, z: 0.3}
+  lowReadyPitch: 40
+  rightWristOffset: {x: 0.025, y: -0.035, z: -0.05}
+  leftWristOffset: {x: -0.03, y: -0.05, z: -0.04}
+  aimMoveSpeedMultiplier: 1
+  aimLineLength: 9
+  damage: 20
+  fireRate: 5
+  automatic: 0
+  range: 30
+  spread: 1
+  moveSpread: 3
+  knockback: 1.2
+  magazineSize: 12
+  reserveAmmo: -1
+  reloadTime: 1.2
+  recoilKick: 0.05
+  recoilPitch: 8
+  recoilShake: 0.12
+  sound: 0

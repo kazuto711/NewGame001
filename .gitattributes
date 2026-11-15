@@ -1,0 +1,19 @@
+# Unity の YAML ファイルは改行コードを統一し、マージしやすくする
+*.cs text eol=lf diff=csharp
+*.unity text eol=lf merge=unityyamlmerge
+*.prefab text eol=lf merge=unityyamlmerge
+*.asset text eol=lf merge=unityyamlmerge
+*.mat text eol=lf merge=unityyamlmerge
+*.anim text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.meta text eol=lf
+
+# バイナリ
+*.fbx binary
+*.blend binary
+*.png binary
+*.jpg binary
+*.tga binary
+*.psd binary
+*.wav binary
+*.ogg binary

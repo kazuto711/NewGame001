@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebb40c384fdce4b44a6866f5ae538d0d, type: 3}
+  m_Name: Move_PowerArmor
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Characters.MovementProfile
+  walkSpeed: 1.3
+  jogSpeed: 3
+  sprintSpeed: 4.6
+  walkInputThreshold: 0.5
+  acceleration: 5.5
+  sprintAcceleration: 3.5
+  deceleration: 7
+  turnSpeedIdle: 240
+  turnSpeedMoving: 170
+  turnSpeedSprint: 90
+  sharpTurnSpeedFactor: 0.25
+  aimMoveSpeedFactor: 0.5
+  aimTurnSpeed: 240
+  pivotAngle: 120
+  pivotMinSpeed: 1.8
+  pivotDeceleration: 9
+  inputSmoothing: 0.12
+  cameraDistanceOffset: 4
+  gravity: -32
+  maxFallSpeed: -40
