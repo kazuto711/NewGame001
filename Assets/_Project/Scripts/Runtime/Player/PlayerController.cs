@@ -34,6 +34,7 @@ namespace Matoi.Player
 
         CharacterMotor motor;
         HitReaction reaction;
+        DodgeRoll dodge;
         bool sprintLatched, backpedal;
         Vector3 aimDir;
 
@@ -49,6 +50,7 @@ namespace Matoi.Player
             if (shooter == null) shooter = GetComponent<WeaponShooter>();
             if (melee == null) melee = GetComponent<MeleeAttack>();
             reaction = GetComponent<HitReaction>();
+            dodge = GetComponent<DodgeRoll>();
             aimDir = transform.forward;
         }
 
@@ -61,6 +63,7 @@ namespace Matoi.Player
             input.MeleePressed += OnMeleePressed;
             input.NextWeaponPressed += OnNextWeapon;
             input.WeaponSlotPressed += OnWeaponSlot;
+            input.DodgePressed += OnDodgePressed;
         }
 
         void OnDisable()
@@ -72,7 +75,18 @@ namespace Matoi.Player
             input.MeleePressed -= OnMeleePressed;
             input.NextWeaponPressed -= OnNextWeapon;
             input.WeaponSlotPressed -= OnWeaponSlot;
+            input.DodgePressed -= OnDodgePressed;
         }
+
+        void OnDodgePressed()
+        {
+            if (!dodge || (reaction && (reaction.IsStaggered || reaction.Health.IsDead))) return;
+            // スティックの方向へ。倒していなければ体の正面へ
+            Vector3 dir = ToWorld(input.Move);
+            dodge.TryRoll(dir.sqrMagnitude > 0.04f ? dir : transform.forward);
+        }
+
+        public bool IsRolling => dodge && dodge.IsRolling;
 
         void OnSprintPressed() => sprintLatched = true;
         void OnDrawPressed() { if (weapons) weapons.ToggleDrawn(); }
@@ -98,7 +112,7 @@ namespace Matoi.Player
             Vector3 moveDir = ToWorld(stick);
 
             // 近接攻撃中・ひるみ中・死亡中は、移動・射撃をしない
-            if (IsMeleeAttacking || (reaction && (reaction.IsStaggered || reaction.Health.IsDead)))
+            if (IsMeleeAttacking || IsRolling || (reaction && (reaction.IsStaggered || reaction.Health.IsDead)))
             {
                 if (weapons) weapons.SetAim(false, aimDir);
                 if (shooter) shooter.SetTrigger(false);

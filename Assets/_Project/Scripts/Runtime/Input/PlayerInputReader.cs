@@ -21,6 +21,8 @@ namespace Matoi.InputHandling
         public event Action NextWeaponPressed;
         /// <summary>数字キーで武器を直接選ぶ（0 始まり）</summary>
         public event Action<int> WeaponSlotPressed;
+        public event Action DodgePressed;
+        public event Action DebugWavesPressed;
 
         public Vector2 Move => move != null ? move.ReadValue<Vector2>() : Vector2.zero;
         public bool SprintHeld => sprintHold != null && sprintHold.IsPressed();
@@ -68,6 +70,8 @@ namespace Matoi.InputHandling
             nextWeapon.performed += c => { TrackDevice(c); NextWeaponPressed?.Invoke(); };
             weapon1.performed += c => { TrackDevice(c); WeaponSlotPressed?.Invoke(0); };
             weapon2.performed += c => { TrackDevice(c); WeaponSlotPressed?.Invoke(1); };
+            map.FindAction("Dodge", true).performed += c => { TrackDevice(c); DodgePressed?.Invoke(); };
+            map.FindAction("DebugWaves", true).performed += c => DebugWavesPressed?.Invoke();
         }
 
         void OnEnable()

@@ -37,6 +37,13 @@ namespace Matoi.AI
         readonly List<Vector3> corners = new List<Vector3>();
         int cornerIndex;
 
+        /// <summary>倒された後に持ち場で復活するか（ウェーブで出した敵は復活しない）</summary>
+        public bool RespawnEnabled { get; set; } = true;
+        public float DeathTime => deathTime;
+
+        /// <summary>見えていなくても、すぐにプレイヤーを追いかけ始める。</summary>
+        public void ForceAggro() { aggro = true; if (Current == State.Idle || Current == State.Return) Enter(State.Chase); }
+
         public State Current { get; private set; } = State.Idle;
         public EnemyDefinition Definition => definition;
         public Health Health => health;
@@ -86,6 +93,7 @@ namespace Matoi.AI
             {
                 reaction.staggerTime = definition.staggerTime;
                 reaction.knockbackScale = definition.knockbackScale;
+                reaction.staggerCooldown = definition.staggerCooldown;
             }
         }
 
@@ -97,7 +105,7 @@ namespace Matoi.AI
             if (Current == State.Dead)
             {
                 motor.SetIntent(MoveIntent.None);
-                if (definition.respawnDelay > 0f && Time.time > deathTime + definition.respawnDelay) Respawn();
+                if (RespawnEnabled && definition.respawnDelay > 0f && Time.time > deathTime + definition.respawnDelay) Respawn();
                 return;
             }
             if (reaction && reaction.IsStaggered)

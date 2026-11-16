@@ -162,6 +162,7 @@ GameObject:
   - component: {fileID: 7881385313820718777}
   - component: {fileID: 1997022724182934103}
   - component: {fileID: 3220264117421682806}
+  - component: {fileID: 8224007412343588308}
   - component: {fileID: 4749225227674647344}
   m_Layer: 0
   m_Name: Player
@@ -377,6 +378,7 @@ MonoBehaviour:
   staggerTime: 0.22
   knockbackScale: 0.8
   staggerThreshold: 1
+  staggerCooldown: 0
   flash: 0
 --- !u!114 &3220264117421682806
 MonoBehaviour:
@@ -393,6 +395,26 @@ MonoBehaviour:
   damageVolume: {fileID: 0}
   damageFlashFade: 2.5
   respawnDelay: 3
+--- !u!114 &8224007412343588308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4050886045125315868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89345cc823cecd34381f1f5a8ac9b128, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Combat.DodgeRoll
+  motor: {fileID: 0}
+  characterAnimator: {fileID: 0}
+  health: {fileID: 0}
+  melee: {fileID: 0}
+  speed: 8.5
+  duration: 0.5
+  invulnerableWindow: {x: 0.03, y: 0.38}
+  cooldown: 0.2
 --- !u!114 &4749225227674647344
 MonoBehaviour:
   m_ObjectHideFlags: 0

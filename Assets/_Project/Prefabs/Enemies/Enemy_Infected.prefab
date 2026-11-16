@@ -159,6 +159,7 @@ MonoBehaviour:
   staggerTime: 0.35
   knockbackScale: 1
   staggerThreshold: 1
+  staggerCooldown: 0
   flash: 1
 --- !u!114 &8056642859492386924
 MonoBehaviour:

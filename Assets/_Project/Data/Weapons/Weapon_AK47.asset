@@ -24,16 +24,16 @@ MonoBehaviour:
   leftWristOffset: {x: -0.03, y: -0.05, z: -0.18}
   aimMoveSpeedMultiplier: 0.85
   aimLineLength: 14
-  damage: 28
-  fireRate: 10
+  damage: 24
+  fireRate: 9
   automatic: 1
   range: 45
-  spread: 1.5
-  moveSpread: 4
+  spread: 1.8
+  moveSpread: 5
   knockback: 1.6
   magazineSize: 30
-  reserveAmmo: 120
-  reloadTime: 1.8
+  reserveAmmo: 90
+  reloadTime: 1.9
   recoilKick: 0.035
   recoilPitch: 5
   recoilShake: 0.09

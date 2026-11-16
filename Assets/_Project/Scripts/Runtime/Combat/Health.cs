@@ -68,14 +68,26 @@ namespace Matoi.Combat
 
         void Awake() => current = maxHealth;
 
+        /// <summary>この時刻まで無敵（回避中など）。</summary>
+        public float InvulnerableUntil { get; set; }
+        public bool IsInvulnerable => Time.time < InvulnerableUntil;
+        public int DodgedHits { get; private set; }
+
         public void TakeDamage(DamageInfo info)
         {
             if (IsDead || info.amount <= 0f) return;
+            if (IsInvulnerable) { DodgedHits++; return; }
             current = Mathf.Max(0f, current - info.amount);
             OnDamaged?.Invoke(info);
             if (IsDead) OnDied?.Invoke(info);
         }
 
         public void ResetHealth() => current = maxHealth;
+
+        public void Heal(float amount)
+        {
+            if (IsDead) return;
+            current = Mathf.Min(maxHealth, current + amount);
+        }
     }
 }

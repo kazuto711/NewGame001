@@ -42,6 +42,8 @@ namespace Matoi.AI
 
         [Header("被弾")]
         public float staggerTime = 0.35f;
+        [Tooltip("一度ひるんだら、この秒数は射撃でひるまない（強い敵ほど長く）")]
+        public float staggerCooldown = 0.8f;
         [Tooltip("吹き飛びやすさ（重い敵ほど小さく）")]
         public float knockbackScale = 1f;
 

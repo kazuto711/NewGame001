@@ -28,9 +28,9 @@ MonoBehaviour:
   fireRate: 5
   automatic: 0
   range: 30
-  spread: 1
+  spread: 0.8
   moveSpread: 3
-  knockback: 1.2
+  knockback: 1
   magazineSize: 12
   reserveAmmo: -1
   reloadTime: 1.2

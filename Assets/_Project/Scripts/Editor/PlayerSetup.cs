@@ -216,6 +216,7 @@ namespace Matoi.EditorTools
             reaction.knockbackScale = 0.8f;
             reaction.flash = false;
             root.AddComponent<PlayerLife>();
+            root.AddComponent<DodgeRoll>(); // M8: 回避（前転）
             var lineGo = new GameObject("AimLine");
             lineGo.transform.SetParent(root.transform, false);
             var line = lineGo.AddComponent<LineRenderer>();

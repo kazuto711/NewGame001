@@ -13,19 +13,20 @@ MonoBehaviour:
   m_Name: Enemy_Infected
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.AI.EnemyDefinition
   displayName: "\u4FB5\u98DF\u8005"
-  maxHealth: 90
+  maxHealth: 110
   movement: {fileID: 11400000, guid: dfdae270b22e0d346b6727accd7a5532, type: 2}
-  detectRange: 13
+  detectRange: 14
   hearRange: 4
   loseRange: 28
   aggroOnDamage: 1
   sprintDistance: 7
   attackRange: 1.7
-  windupTime: 0.45
-  attackCooldown: 1.1
+  windupTime: 0.5
+  attackCooldown: 1.2
   attackDamage: 15
   attackKnockback: 4
   attackLunge: 3
-  staggerTime: 0.35
+  staggerTime: 0.3
+  staggerCooldown: 0.8
   knockbackScale: 1
   respawnDelay: 8

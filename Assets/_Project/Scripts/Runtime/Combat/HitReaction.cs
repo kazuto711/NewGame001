@@ -22,8 +22,13 @@ namespace Matoi.Combat
         public float knockbackScale = 1f;
         [Tooltip("この量以上のダメージでのみひるむ（小さな攻撃は無視する等）")]
         public float staggerThreshold = 1f;
+        [Tooltip("一度ひるんだら、この秒数はひるまない（連射でハメ続けられないように）")]
+        public float staggerCooldown = 0f;
         [Tooltip("白く光らせる")]
         public bool flash = true;
+
+        float lastStagger = -10f;
+        public int StaggerCount { get; private set; }
 
         Health health;
         Renderer[] renderers;
@@ -59,6 +64,10 @@ namespace Matoi.Combat
             if (flash) flashAmount = 1f;
             if (motor) motor.AddImpulse(info.direction * info.knockback * knockbackScale);
             if (health.IsDead || info.amount < staggerThreshold) return;
+            // 近接攻撃は必ずひるませる（殴る手応えを優先）。射撃はクールダウン中ならひるまない
+            if (!info.isMelee && Time.time < lastStagger + staggerTime + staggerCooldown) return;
+            lastStagger = Time.time;
+            StaggerCount++;
             StaggeredUntil = Time.time + staggerTime;
             if (melee) melee.Cancel();
             if (characterAnimator) characterAnimator.PlayAction("Hit", staggerTime + 0.1f);

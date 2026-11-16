@@ -77,6 +77,21 @@ namespace Matoi.Characters
             externalVelocity += velocity;
         }
 
+        Vector3 dashVelocity;
+        float dashStart, dashDuration;
+
+        /// <summary>回避などで、一定時間だけ決まった速度で動かす（入力は無視、だんだん減速）。</summary>
+        public void Dash(Vector3 velocity, float duration)
+        {
+            velocity.y = 0f;
+            dashVelocity = velocity;
+            dashStart = Time.time;
+            dashDuration = duration;
+            if (velocity.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(velocity.normalized, Vector3.up);
+        }
+
+        public bool IsDashing => Time.time < dashStart + dashDuration;
+
         /// <summary>向きを即座に変える（近接攻撃の振り向きなど）。</summary>
         public void FaceImmediately(Vector3 dir)
         {
@@ -131,7 +146,18 @@ namespace Matoi.Characters
             if (freeFacing && !IsFreeFacing) planarVelocity = transform.forward * speed; // 切り替え時に速度を引き継ぐ
             IsFreeFacing = freeFacing;
 
-            if (freeFacing) UpdateFreeFacing(dt, inputMag, facing.normalized);
+            if (IsDashing)
+            {
+                // 回避中：速度は決め打ち（最初が最速、最後に減速）。終わった時の勢いはそのまま引き継ぐ
+                float t = (Time.time - dashStart) / Mathf.Max(0.01f, dashDuration);
+                float curve = Mathf.Lerp(1f, 0.25f, t * t);
+                planarVelocity = dashVelocity * curve;
+                speed = planarVelocity.magnitude;
+                IsPivoting = false;
+                freeFacing = true; // 下の移動処理で planarVelocity をそのまま使う
+                IsFreeFacing = true;
+            }
+            else if (freeFacing) UpdateFreeFacing(dt, inputMag, facing.normalized);
             else UpdateFaceMovement(dt, inputMag);
 
             // 5) 重力

@@ -249,6 +249,22 @@ namespace Matoi.EditorTools
             fromHit.exitTime = 0.9f;
             fromHit.duration = 0.1f;
 
+            // M8: 回避（前転）
+            ctrl.AddParameter("Roll", AnimatorControllerParameterType.Trigger);
+            var roll = asm.AddState("Roll");
+            roll.motion = Clip(clips, "Roll");
+            roll.speed = 2.9f;   // 元は 1.5 秒 → 約 0.5 秒に
+            var toRoll = asm.AddAnyStateTransition(roll);
+            toRoll.hasExitTime = false;
+            toRoll.duration = 0.04f;
+            toRoll.canTransitionToSelf = true;
+            toRoll.AddCondition(AnimatorConditionMode.If, 0, "Roll");
+            toRoll.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            var fromRoll = roll.AddTransition(empty);
+            fromRoll.hasExitTime = true;
+            fromRoll.exitTime = 0.92f;
+            fromRoll.duration = 0.08f;
+
             var death = asm.AddState("Death");
             death.motion = Clip(clips, "Death01");
             var toDeath = asm.AddAnyStateTransition(death);

@@ -73,6 +73,16 @@ namespace Matoi.Combat
             CombatFx.Instance?.PlaySound(ProceduralSfx.Reload, 0.6f);
         }
 
+        /// <summary>全武器の弾を満タンにする（ウェーブ報酬・補給所など）。</summary>
+        public void RefillAll()
+        {
+            foreach (var kv in ammo)
+            {
+                kv.Value.mag = kv.Key.magazineSize;
+                kv.Value.reserve = kv.Key.reserveAmmo;
+            }
+        }
+
         void CancelReload()
         {
             reloadEnd = -1f;

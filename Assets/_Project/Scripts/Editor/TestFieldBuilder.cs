@@ -161,6 +161,7 @@ namespace Matoi.EditorTools
 
             var list = new List<EditorBuildSettingsScene> { new EditorBuildSettingsScene(ScenePath, true) };
             EditorBuildSettings.scenes = list.ToArray();
+            if (ToonConverter.Enabled) ToonConverter.ApplyAll(false); // 新しく作られた材質もトゥーンに
             AssetDatabase.SaveAssets();
             Debug.Log("[Matoi] Test field built: " + ScenePath);
         }
@@ -460,6 +461,12 @@ namespace Matoi.EditorTools
                 e.name = $"Enemy_Infected_{i}";
                 e.transform.SetPositionAndRotation(EnemyPositions[i], Quaternion.Euler(0, R(0, 360), 0));
             }
+
+            // M8: ウェーブ式の戦闘テスト（Start / F2 で開始）
+            var director = new GameObject("WaveDirector").AddComponent<Matoi.AI.WaveDirector>();
+            var so = new SerializedObject(director);
+            so.FindProperty("enemyPrefab").objectReferenceValue = prefab.GetComponent<Matoi.AI.EnemyBrain>();
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ---------- M6: 訓練用のかかし（撃つ・殴るの的） ----------

@@ -133,7 +133,8 @@ namespace Matoi.Tests
             Assert.Less(rightHand, 0.06f, "右手が銃のグリップに届いていない");
             Assert.Less(leftHand, 0.06f, "左手が銃に添えられていない");
             Assert.Less(gunErr, 4f);
-            Assert.That(shots, Is.InRange(8, 12), "連射速度が想定外（約10発/秒）");
+            float rate = holder.CurrentWeapon.fireRate;  // 1秒間押し続けた時の発射数（データの値から期待値を出す）
+            Assert.That(shots, Is.InRange(Mathf.FloorToInt(rate * 0.7f), Mathf.CeilToInt(rate * 1.2f)), "連射速度が想定外");
             Assert.IsTrue(target.Health.IsDead, "連射で的を倒せていない");
         }
 

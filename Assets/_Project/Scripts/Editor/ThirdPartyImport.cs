@@ -85,14 +85,23 @@ namespace Matoi.EditorTools
             string tn = tex ? tex.name.ToLowerInvariant() : "";
             bool cutout = new[] { "leaf", "leaves", "grass", "flower", "fern", "petal", "plant", "clover", "bush" }
                 .Any(k => n.Contains(k) || tn.Contains(k));
-            if (!cutout) return;
-            // 葉・草：アルファで切り抜き、両面描画
-            material.SetFloat("_AlphaClip", 1f);
-            material.SetFloat("_Cutoff", 0.45f);
-            material.EnableKeyword("_ALPHATEST_ON");
-            material.SetFloat("_Cull", 0f);
-            material.SetFloat("_Smoothness", 0.1f);
-            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            if (cutout)
+            {
+                // 葉・草：アルファで切り抜き、両面描画
+                material.SetFloat("_AlphaClip", 1f);
+                material.SetFloat("_Cutoff", 0.45f);
+                material.EnableKeyword("_ALPHATEST_ON");
+                material.SetFloat("_Cull", 0f);
+                material.SetFloat("_Smoothness", 0.1f);
+                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+            // M8: トゥーン表現が ON なら、埋め込み材質もトゥーンシェーダーにする
+            if (ToonConverter.Enabled)
+            {
+                var toon = Shader.Find(ToonConverter.ToonShaderName);
+                if (toon) ToonConverter.Convert(material, toon, assetPath);
+                if (cutout) material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
         }
     }
 }
