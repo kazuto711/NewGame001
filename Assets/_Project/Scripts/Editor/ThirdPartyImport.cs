@@ -44,6 +44,29 @@ namespace Matoi.EditorTools
             }
         }
 
+        /// <summary>
+        /// Blender で "COL_" から始まる名前を付けた箱 → 当たり判定（BoxCollider）にして、見た目からは消す。
+        /// 建物を手作りする時も、この名前の付け方をすれば自動で当たり判定が付く。
+        /// </summary>
+        void OnPostprocessModel(GameObject root)
+        {
+            if (!IsEnvironment(assetPath)) return;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (!t.name.StartsWith("COL_")) continue;
+                var mf = t.GetComponent<MeshFilter>();
+                if (mf && mf.sharedMesh)
+                {
+                    var bc = t.gameObject.AddComponent<BoxCollider>();
+                    bc.center = mf.sharedMesh.bounds.center;
+                    bc.size = mf.sharedMesh.bounds.size;
+                }
+                var mr = t.GetComponent<MeshRenderer>();
+                if (mr) Object.DestroyImmediate(mr);
+                if (mf) Object.DestroyImmediate(mf);
+            }
+        }
+
         void OnPreprocessAnimation()
         {
             if (!IsAnimation(assetPath)) return;

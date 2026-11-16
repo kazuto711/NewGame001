@@ -69,6 +69,9 @@ namespace Matoi.EditorTools
             string n = m.name.ToLowerInvariant();
             if (n.Contains("ground") || n.Contains("asphalt") || n.Contains("roadline") || n.Contains("paddy") || n.Contains("mountain"))
                 outline = 0f; // 地面・遠景は縁取りしない（線だらけになるため）
+            // 背景は平らな大きい面が多く、硬いハイライトが面全体に乗って白飛びするため、つやを抑える
+            if (p.Contains("/environment/") && m.HasProperty("_Smoothness"))
+                m.SetFloat("_Smoothness", Mathf.Min(m.GetFloat("_Smoothness"), 0.12f));
             m.SetFloat("_OutlineWidth", outline);
             m.SetColor("_OutlineColor", outlineColor);
             if (!AssetDatabase.IsSubAsset(m) && AssetDatabase.Contains(m)) EditorUtility.SetDirty(m);

@@ -113,7 +113,10 @@ namespace Matoi.Tests
             var house = CameraOccluder.All.First(o => o.name.StartsWith("House_14_-2"));
             // カメラから見て家の真裏（北東側）に立つ
             Vector3 flatFwd = Quaternion.Euler(0, CamYaw, 0) * Vector3.forward;
-            Vector3 spot = new Vector3(14f, 0.1f, -2f) + flatFwd * 4.8f;
+            // 家の大きさに合わせて、家のすぐ裏（カメラの反対側）に立つ
+            var hb = house.Bounds;
+            float reach = Mathf.Abs(hb.extents.x * flatFwd.x) + Mathf.Abs(hb.extents.z * flatFwd.z) + 1.2f;
+            Vector3 spot = new Vector3(hb.center.x, 0.1f, hb.center.z) + flatFwd * reach;
             motor.Teleport(spot, 0f);
             yield return new WaitForSeconds(2.0f);
             bool hiddenBehind = house.IsHidden;

@@ -239,12 +239,27 @@ namespace Matoi.EditorTools
         static void BuildVillage(Transform env)
         {
             var g = Group("Village", env).transform;
-            // x, z, 幅, 奥行, 高さ, 向き, 損壊度(0:無事 1:屋根崩落 2:壁のみ), 屋根材
-            BuildHouse(g, 13, -20, 7, 5.5f, 3.0f, 0, 0, "Roof_Tile");
-            BuildHouse(g, 25, -14, 6, 5, 2.8f, 8, 1, "Roof_Tin");
-            BuildHouse(g, 14, -2, 8, 6, 3.2f, -4, 1, "Roof_Tile");
-            BuildHouse(g, 27, 5, 6, 5, 2.8f, 12, 2, "Roof_Tile");
-            BuildHouse(g, 14, 14, 7, 5, 3.0f, 3, 0, "Roof_Tin");
+            if (BuildingModel("Minka") != null)
+            {
+                // Blender で作った日本家屋（Tools/Blender/build_japanese_buildings.py）。正面を道路（西）へ向ける
+                PlaceBuilding("Minka", g, 13f, -20f, Vector3.left, -3f);
+                PlaceBuilding("Barn", g, 25f, -14f, Vector3.left, 6f);
+                PlaceBuilding("Minka_Ruined", g, 14f, -2f, Vector3.left, 4f);
+                PlaceBuilding("Kura", g, 27f, 5f, Vector3.left, -8f);
+                PlaceBuilding("Minka", g, 14f, 14f, Vector3.left, 2f);
+                // 道ばたの小物
+                PlaceBuilding("VendingMachine", g, 5.7f, -3.6f, Vector3.left, 0f, occluder: false);
+                PlaceBuilding("BusStop", g, 6.1f, 6.5f, Vector3.left, 0f, occluder: false);
+            }
+            else
+            {
+                // x, z, 幅, 奥行, 高さ, 向き, 損壊度(0:無事 1:屋根崩落 2:壁のみ), 屋根材
+                BuildHouse(g, 13, -20, 7, 5.5f, 3.0f, 0, 0, "Roof_Tile");
+                BuildHouse(g, 25, -14, 6, 5, 2.8f, 8, 1, "Roof_Tin");
+                BuildHouse(g, 14, -2, 8, 6, 3.2f, -4, 1, "Roof_Tile");
+                BuildHouse(g, 27, 5, 6, 5, 2.8f, 12, 2, "Roof_Tile");
+                BuildHouse(g, 14, 14, 7, 5, 3.0f, 3, 0, "Roof_Tin");
+            }
 
             // ブロック塀（道路沿い。腰の高さ＝将来の遮蔽物テスト用）
             var walls = Group("BlockWalls", g).transform;
@@ -254,6 +269,38 @@ namespace Matoi.EditorTools
                 float h = rng.NextDouble() < 0.25 ? R(0.5f, 1.0f) : 1.4f;
                 Box("Wall", walls, new Vector3(7.5f, h / 2, z), new Vector3(0.2f, h, 2.4f), "Concrete");
             }
+        }
+
+        const string BuildingDir = "Assets/_Project/Art/Environment/Buildings";
+
+        static GameObject BuildingModel(string name) =>
+            AssetDatabase.LoadAssetAtPath<GameObject>($"{BuildingDir}/{name}.fbx");
+
+        /// <summary>
+        /// 建物モデルを置き、子の "Entrance"（正面の目印）が face の方向を向くよう回す。
+        /// 名前は "House_x_z"（カメラ透過テストなどが名前で探すため）。
+        /// </summary>
+        static GameObject PlaceBuilding(string model, Transform parent, float x, float z, Vector3 face, float extraYaw,
+            bool occluder = true)
+        {
+            var prefab = BuildingModel(model);
+            if (prefab == null) return null;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            go.name = occluder ? $"House_{x}_{z}" : model;
+            go.transform.position = new Vector3(x, 0f, z);
+            Transform entrance = null;
+            foreach (var t in go.GetComponentsInChildren<Transform>()) if (t.name == "Entrance") entrance = t;
+            if (entrance)
+            {
+                Vector3 local = entrance.position - go.transform.position;
+                local.y = 0f;
+                if (local.sqrMagnitude > 0.01f) // 水平に回すだけ（真逆の向きでも上下が反転しないように）
+                    go.transform.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(local, face, Vector3.up), Vector3.up)
+                                            * go.transform.rotation;
+            }
+            go.transform.rotation = Quaternion.Euler(0, extraYaw, 0) * go.transform.rotation;
+            if (occluder) go.AddComponent<Matoi.CameraSystem.CameraOccluder>(); // プレイヤーを隠したら透ける
+            return go;
         }
 
         static void BuildHouse(Transform parent, float x, float z, float w, float d, float h, float rotY,

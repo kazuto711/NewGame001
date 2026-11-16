@@ -43,6 +43,11 @@ namespace Matoi.EditorTools
             go.transform.position = new Vector3(-48f, 46f, -62f);
             go.transform.LookAt(new Vector3(6f, 0f, 6f));
             Shot(cam, Path.Combine(outDir, "overview.png"));
+            // 集落の寄り（建物の見た目確認用）
+            cam.fieldOfView = 40f;
+            go.transform.position = new Vector3(-6f, 16f, -26f);
+            go.transform.LookAt(new Vector3(16f, 1f, -6f));
+            Shot(cam, Path.Combine(outDir, "village.png"));
             Object.DestroyImmediate(go);
 
             Debug.Log("[Matoi] Shots saved to " + outDir);
