@@ -1,5 +1,6 @@
 // M2: 移動プロファイル・プレイヤープレハブ・追従カメラを作り、TestField シーンに配置するエディタツール。
 // メニュー「Matoi > Install Player (M2)」。
+using System.Linq;
 using Matoi.CameraSystem;
 using Matoi.Characters;
 using Matoi.Combat;
@@ -217,6 +218,28 @@ namespace Matoi.EditorTools
             reaction.flash = false;
             root.AddComponent<PlayerLife>();
             root.AddComponent<DodgeRoll>(); // M8: 回避（前転）
+
+            // パワーアーマー：装甲部品を骨に付けておき（普段は非表示）、乗った時だけ表示する
+            var pieces = PowerArmorSetup.Fit(model, HeroSetup.HeroAvatar);
+            foreach (var p in pieces) p.SetActive(false);
+            var footsteps = root.AddComponent<Matoi.Equipment.PowerArmorFootsteps>();
+            SetField(footsteps, "animator", animator);
+            SetField(footsteps, "motor", motor);
+            var ram = root.AddComponent<Matoi.Equipment.PowerArmorRam>();
+            SetField(ram, "motor", motor);
+            var armorUser = root.AddComponent<Matoi.Equipment.PowerArmorUser>();
+            var aso = new SerializedObject(armorUser);
+            var ap = aso.FindProperty("armorPieces");
+            ap.arraySize = pieces.Count;
+            for (int i = 0; i < pieces.Count; i++) ap.GetArrayElementAtIndex(i).objectReferenceValue = pieces[i];
+            var hide = model.GetComponentsInChildren<Renderer>()
+                .Where(r => r.name.Contains("Hair") || r.name.Contains("Beard") || r.name.Contains("Eyebrows")).ToArray();
+            var hp = aso.FindProperty("hideWhenArmored");
+            hp.arraySize = hide.Length;
+            for (int i = 0; i < hide.Length; i++) hp.GetArrayElementAtIndex(i).objectReferenceValue = hide[i];
+            aso.FindProperty("visualRoot").objectReferenceValue = visual.transform;
+            aso.FindProperty("armorProfile").objectReferenceValue = armor;
+            aso.ApplyModifiedPropertiesWithoutUndo();
             var lineGo = new GameObject("AimLine");
             lineGo.transform.SetParent(root.transform, false);
             var line = lineGo.AddComponent<LineRenderer>();

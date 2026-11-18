@@ -20,6 +20,10 @@ namespace Matoi.Combat
         public static AudioClip Whoosh => Get("whoosh", 0.22f, 0.9f, 10f, 0f, 0.35f);
         public static AudioClip Impact => Get("impact", 0.08f, 0.6f, 60f, 200f, 0.5f);
         public static AudioClip Reload => Get("reload", 0.12f, 0.8f, 45f, 900f, 0.4f);
+        /// <summary>パワーアーマーの足音（低いドスン）</summary>
+        public static AudioClip Stomp => Get("stomp", 0.28f, 0.3f, 16f, 48f, 0.9f);
+        /// <summary>パワーアーマーの起動音</summary>
+        public static AudioClip PowerUp => Get("powerup", 0.6f, 0.25f, 4f, 160f, 0.6f);
 
         /// <param name="noiseMix">ノイズの割合（残りは低い「ドン」という正弦波）</param>
         static AudioClip Get(string key, float length, float noiseMix, float decay, float boomHz, float volume)

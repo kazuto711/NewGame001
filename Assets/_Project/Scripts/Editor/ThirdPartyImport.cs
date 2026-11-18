@@ -13,7 +13,8 @@ namespace Matoi.EditorTools
     {
         static bool IsCharacter(string p) => p.Contains("/_Project/Art/Characters/");
         static bool IsAnimation(string p) => p.Contains("/_Project/Art/Animations/");
-        static bool IsEnvironment(string p) => p.Contains("/_Project/Art/Environment/") || p.Contains("/_Project/Art/Weapons/");
+        static bool IsEnvironment(string p) => p.Contains("/_Project/Art/Environment/") || p.Contains("/_Project/Art/Weapons/")
+                                               || p.Contains("/_Project/Art/Equipment/");
 
         void OnPreprocessModel()
         {
@@ -117,6 +118,12 @@ namespace Matoi.EditorTools
                 material.SetFloat("_Cull", 0f);
                 material.SetFloat("_Smoothness", 0.1f);
                 material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+            // 名前に Visor が付く材質は発光させる（パワーアーマーの目など）
+            if (n.Contains("visor"))
+            {
+                material.EnableKeyword("_EMISSION");
+                material.SetColor("_EmissionColor", new Color(1f, 0.55f, 0.12f) * 4f);
             }
             // M8: トゥーン表現が ON なら、埋め込み材質もトゥーンシェーダーにする
             if (ToonConverter.Enabled)

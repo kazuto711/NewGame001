@@ -152,6 +152,7 @@ namespace Matoi.EditorTools
 
             BuildCamera(PlayerSetup.SpawnPoint);
             PlayerSetup.InstallIntoOpenScene(); // M2: プレイヤーと追従カメラ
+            PlacePowerArmor();                  // パワーアーマー（スタート地点のすぐ後ろ）
             BakeNavMesh(env);                   // M7: 敵が歩ける場所の地図
             PlaceEnemies();                     // M7: 敵
 
@@ -496,6 +497,16 @@ namespace Matoi.EditorTools
             EnsureFolder("Assets/_Project/Scenes/TestField");
             AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(surface.navMeshData, path);
+        }
+
+        public static readonly Vector3 PowerArmorPosition = new Vector3(-1.2f, 0.05f, -19.5f);
+
+        static void PlacePowerArmor()
+        {
+            var prefab = PowerArmorSetup.CreateStationPrefab();
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            go.name = "PowerArmor_Sanshiki";
+            go.transform.SetPositionAndRotation(PowerArmorPosition, Quaternion.Euler(0, 35f, 0));
         }
 
         static void PlaceEnemies()

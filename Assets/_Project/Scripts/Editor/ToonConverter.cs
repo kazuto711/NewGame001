@@ -65,6 +65,7 @@ namespace Matoi.EditorTools
             if (p.Contains("/characters/enemies/")) { outline = 2.0f; outlineColor = new Color(0.30f, 0.04f, 0.34f); } // 敵は紫の縁取りで見分けやすく
             else if (p.Contains("/characters/")) outline = 1.8f;
             else if (p.Contains("/weapons/")) outline = 1.2f;
+            else if (p.Contains("/equipment/")) outline = 1.8f;
             if (m.HasProperty("_AlphaClip") && m.GetFloat("_AlphaClip") > 0.5f) outline = 0f; // 葉・草は縁取りしない
             string n = m.name.ToLowerInvariant();
             if (n.Contains("ground") || n.Contains("asphalt") || n.Contains("roadline") || n.Contains("paddy") || n.Contains("mountain"))

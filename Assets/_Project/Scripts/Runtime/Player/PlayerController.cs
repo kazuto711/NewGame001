@@ -35,6 +35,7 @@ namespace Matoi.Player
         CharacterMotor motor;
         HitReaction reaction;
         DodgeRoll dodge;
+        Matoi.Equipment.PowerArmorUser armor;
         bool sprintLatched, backpedal;
         Vector3 aimDir;
 
@@ -51,6 +52,7 @@ namespace Matoi.Player
             if (melee == null) melee = GetComponent<MeleeAttack>();
             reaction = GetComponent<HitReaction>();
             dodge = GetComponent<DodgeRoll>();
+            armor = GetComponent<Matoi.Equipment.PowerArmorUser>();
             aimDir = transform.forward;
         }
 
@@ -64,6 +66,7 @@ namespace Matoi.Player
             input.NextWeaponPressed += OnNextWeapon;
             input.WeaponSlotPressed += OnWeaponSlot;
             input.DodgePressed += OnDodgePressed;
+            input.InteractPressed += OnInteractPressed;
         }
 
         void OnDisable()
@@ -76,6 +79,14 @@ namespace Matoi.Player
             input.NextWeaponPressed -= OnNextWeapon;
             input.WeaponSlotPressed -= OnWeaponSlot;
             input.DodgePressed -= OnDodgePressed;
+            input.InteractPressed -= OnInteractPressed;
+        }
+
+        /// <summary>E / ↑：近くのパワーアーマーに乗る・降りる。</summary>
+        void OnInteractPressed()
+        {
+            if (!armor || IsMeleeAttacking || IsRolling) return;
+            armor.TryInteract();
         }
 
         void OnDodgePressed()
@@ -89,7 +100,12 @@ namespace Matoi.Player
         public bool IsRolling => dodge && dodge.IsRolling;
 
         void OnSprintPressed() => sprintLatched = true;
-        void OnDrawPressed() { if (weapons) weapons.ToggleDrawn(); }
+        void OnDrawPressed()
+        {
+            // パワーアーマーの近くでは Y でも乗り込める（ゲームパッドで押しやすいように）
+            if (armor && !armor.IsArmored && armor.NearestAvailable()) { armor.TryInteract(); return; }
+            if (weapons) weapons.ToggleDrawn();
+        }
         void OnReloadPressed() { if (shooter && weapons && weapons.IsDrawn) shooter.Reload(); }
         void OnNextWeapon() { if (weapons) { weapons.SelectNext(); weapons.SetDrawn(true); } }
         void OnWeaponSlot(int i) { if (weapons) { weapons.Select(i); weapons.SetDrawn(true); } }

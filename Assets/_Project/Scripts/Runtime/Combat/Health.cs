@@ -73,10 +73,18 @@ namespace Matoi.Combat
         public bool IsInvulnerable => Time.time < InvulnerableUntil;
         public int DodgedHits { get; private set; }
 
+        /// <summary>
+        /// ダメージを受ける前に書き換える仕組み（パワーアーマーが肩代わりする等）。
+        /// 戻り値の amount が実際に体力から引かれる。
+        /// </summary>
+        public Func<DamageInfo, DamageInfo> DamageFilter;
+
         public void TakeDamage(DamageInfo info)
         {
             if (IsDead || info.amount <= 0f) return;
             if (IsInvulnerable) { DodgedHits++; return; }
+            if (DamageFilter != null) info = DamageFilter(info);
+            if (info.amount <= 0f) { OnDamaged?.Invoke(info); return; }
             current = Mathf.Max(0f, current - info.amount);
             OnDamaged?.Invoke(info);
             if (IsDead) OnDied?.Invoke(info);
