@@ -276,8 +276,9 @@ namespace Matoi.Player
             burstShots = Time.time - lastShotTime > recoilPatternReset ? 0 : burstShots + 1;
             lastShotTime = Time.time;
             // 連射すると左右にゆっくり揺れながら上がる（覚えて抑えられる模様＋少しのばらつき）
-            float sideways = (Mathf.Sin(burstShots * 0.8f) + Random.Range(-0.35f, 0.35f)) * def.cameraKickSide;
-            tp.AddRecoil(def.cameraKickUp, sideways, def.cameraRecoverSpeed, def.cameraRecoverDelay, def.cameraKickMax);
+            float stability = shooter ? shooter.StabilityScaleOf(def) : 1f;   // 強化で反動が小さくなる
+            float sideways = (Mathf.Sin(burstShots * 0.8f) + Random.Range(-0.35f, 0.35f)) * def.cameraKickSide * stability;
+            tp.AddRecoil(def.cameraKickUp * stability, sideways, def.cameraRecoverSpeed, def.cameraRecoverDelay, def.cameraKickMax);
         }
 
         void Start() { if (shooter) shooter.Fired += OnShotFired; }

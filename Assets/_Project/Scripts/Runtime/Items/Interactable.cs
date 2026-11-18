@@ -12,6 +12,10 @@ namespace Matoi.Items
         static readonly List<Interactable> all = new List<Interactable>();
         public static IReadOnlyList<Interactable> All => all;
 
+        [Tooltip("セーブデータで見分けるための名前（フィールド生成時に自動で付く）")]
+        [SerializeField, HideInInspector] string saveId;
+        public string SaveId { get => saveId; set => saveId = value; }
+
         /// <summary>今、調べられるか。</summary>
         public virtual bool CanInteract => true;
         /// <summary>操作の名前（拾う、調べる など）。</summary>

@@ -115,7 +115,7 @@ namespace Matoi.Tests
         public IEnumerator EnemyHitFromEachSide_PlaysMatchingReaction()
         {
             yield return LoadField();
-            var enemy = EnemyBrain.All[0];
+            var enemy = EnemyBrain.All.OrderBy(x => x.name).First();
             enemy.PlaceAt(new Vector3(-8f, 0.1f, -2f), 0f);
             enemy.enabled = false;
             yield return new WaitForSeconds(0.3f);
@@ -153,7 +153,7 @@ namespace Matoi.Tests
         public IEnumerator HeavyHit_StaggersLongerThanNormalHit()
         {
             yield return LoadField();
-            var enemy = EnemyBrain.All[0];
+            var enemy = EnemyBrain.All.OrderBy(x => x.name).First();
             enemy.PlaceAt(new Vector3(-8f, 0.1f, -2f), 0f);
             enemy.enabled = false;
             yield return new WaitForSeconds(0.3f);
@@ -174,7 +174,7 @@ namespace Matoi.Tests
         public IEnumerator Enemy_ShowsWindupAnimation_BeforeItsHitLands()
         {
             yield return LoadField();
-            var enemy = EnemyBrain.All[0];
+            var enemy = EnemyBrain.All.OrderBy(x => x.name).First();
             enemy.PlaceAt(motor.transform.position + motor.transform.forward * 1.4f, motor.transform.eulerAngles.y + 180f);
             enemy.ForceAggro();
             var enemyAnimator = enemy.GetComponentInChildren<Animator>();

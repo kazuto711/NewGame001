@@ -94,6 +94,9 @@ namespace Matoi.Combat
 
         public void ResetHealth() => current = maxHealth;
 
+        /// <summary>セーブデータから体力を戻す。</summary>
+        public void RestoreCurrent(float value) => current = Mathf.Clamp(value, 1f, maxHealth);
+
         public void Heal(float amount)
         {
             if (IsDead) return;

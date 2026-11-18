@@ -93,9 +93,19 @@ namespace Matoi.Items
             return true;
         }
 
+        /// <summary>セーブデータから中身を戻す。</summary>
+        public void SetContents(IEnumerable<ItemStack> contents)
+        {
+            stacks.Clear();
+            foreach (var s in contents)
+                if (s.item && s.count > 0) stacks.Add(new ItemStack(s.item, s.count));
+            Changed?.Invoke();
+        }
+
         /// <summary>1 個、足元に捨てる。</summary>
         public bool Drop(ItemDefinition item)
         {
+            if (item && item.category == ItemCategory.Key) { Notify("大切な物は捨てられません"); return false; }
             if (Remove(item, 1) <= 0) return false;
             WorldPickup.Spawn(item, 1, transform.position + transform.forward * 0.8f + Vector3.up * 0.5f);
             return true;

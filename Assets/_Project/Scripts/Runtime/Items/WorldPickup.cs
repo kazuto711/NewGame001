@@ -20,6 +20,9 @@ namespace Matoi.Items
             count = Mathf.Max(1, amount);
         }
 
+        /// <summary>セーブデータから残りの個数を戻す。</summary>
+        public void RestoreCount(int amount) => count = Mathf.Max(1, amount);
+
         public override void Interact(PlayerInteractor who)
         {
             int added = who.Inventory.Add(item, count);

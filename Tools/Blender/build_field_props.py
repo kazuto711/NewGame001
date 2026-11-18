@@ -7,6 +7,7 @@
 #   入れ物  … Crate、Tansu、ToolBox、Locker
 #   背景    … Jizo、Well、KeiTruck、Tiller、RoadSign、BambooFence、StoneLantern、CrateStack、TireStack、
 #              Mailbox、Hasa、Bicycle、Bench、ToriiSmall、Shelf、LowTable、RiceBags
+#   拠点    … Workbench、StorageChest、Bedroll、Campfire
 #
 # Unity 側との約束（build_wreck_props.py と同じ）: "COL_" で始まる箱は当たり判定。原点は地面の高さ・物の中心。
 import math
@@ -500,10 +501,74 @@ def rice_bags():
     return b.finish()
 
 
+# ---------------------------------------------------------------- 拠点の設備（正面は -Y）
+def workbench():
+    b = Builder("Workbench")
+    W, D, H = 1.6, 0.75, 0.9
+    b.box((W, D, 0.07), (0, 0, H - 0.035), "Wood")
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            b.box((0.09, 0.09, H - 0.07), (sx * (W / 2 - 0.08), sy * (D / 2 - 0.08), (H - 0.07) / 2), "WoodDark")
+    b.box((W - 0.2, D - 0.2, 0.04), (0, 0, 0.28), "WoodGrey")
+    b.box((W, 0.05, 0.75), (0, D / 2 - 0.02, H + 0.37), "WoodGrey")                 # 背板（工具掛け）
+    b.box((0.05, 0.03, 0.34), (-0.5, D / 2 - 0.06, H + 0.42), "Steel")              # レンチ
+    b.box((0.14, 0.04, 0.05), (-0.5, D / 2 - 0.06, H + 0.6), "Steel")
+    b.box((0.04, 0.03, 0.3), (-0.2, D / 2 - 0.06, H + 0.44), "WoodDark")            # 金づち
+    b.box((0.16, 0.05, 0.07), (-0.2, D / 2 - 0.06, H + 0.6), "SteelDark")
+    b.box((0.38, 0.03, 0.12), (0.35, D / 2 - 0.06, H + 0.5), "Rust")                # のこぎり
+    b.box((0.17, 0.2, 0.1), (0.55, -0.12, H + 0.05), "SteelDark")                   # 万力
+    b.box((0.2, 0.05, 0.13), (0.55, -0.25, H + 0.07), "Blue")
+    b.cyl(0.015, 0.2, (0.55, -0.36, H + 0.07), "Steel", (90, 0, 0), verts=6)
+    b.box((0.3, 0.2, 0.05), (-0.4, -0.1, H + 0.025), "Rust")                        # 鉄くずと部品
+    b.cyl(0.06, 0.05, (-0.1, 0.05, H + 0.025), "Copper", verts=10)
+    b.box((0.42, 0.3, 0.16), (-0.35, 0.05, 0.38), "Red")                            # 下段の工具箱
+    b.col((W, D, H + 0.75), (0, 0, (H + 0.75) / 2))
+    return b.finish()
+
+
+def storage_chest():
+    b = Builder("StorageChest")
+    W, D, H = 1.15, 0.65, 0.5
+    b.box((W, D, H), (0, 0, H / 2), "Wood")
+    b.box((W + 0.03, D + 0.03, 0.15), (0, 0, H + 0.075), "WoodDark")                # ふた
+    for sx in (-1, 1):
+        b.box((0.08, D + 0.05, H + 0.17), (sx * (W / 2 - 0.15), 0, (H + 0.17) / 2), "SteelDark")   # 鉄の帯
+    b.box((0.17, 0.04, 0.2), (0, -D / 2 - 0.015, H - 0.02), "Steel")                # 留め金
+    b.box((0.07, 0.03, 0.08), (0, -D / 2 - 0.04, H - 0.05), "Yellow")
+    b.col((W, D, H + 0.15), (0, 0, (H + 0.15) / 2))
+    return b.finish()
+
+
+def bedroll():
+    b = Builder("Bedroll")
+    W, L = 0.95, 2.0
+    b.box((W + 0.12, L + 0.12, 0.05), (0, 0, 0.025), "Straw")                       # ござ
+    b.box((W, L, 0.09), (0, 0, 0.095), "Cream")                                     # 敷き布団
+    b.box((W + 0.02, L * 0.62, 0.07), (0, -L * 0.17, 0.17), "Blue")                 # 掛け布団
+    b.box((W + 0.03, 0.14, 0.08), (0, L * 0.12, 0.175), "White")
+    b.box((0.55, 0.32, 0.12), (0, L / 2 - 0.25, 0.2), "White")                      # まくら
+    return b.finish()
+
+
+def campfire():
+    b = Builder("Campfire")
+    for i in range(9):
+        a = math.radians(i * 40)
+        b.ball(0.13, (math.cos(a) * 0.48, math.sin(a) * 0.48, 0.07), "StoneDark" if i % 2 else "Stone", (1.1, 0.9, 0.75))
+    for a in (20, 140, 260):
+        r = math.radians(a)
+        b.cyl(0.05, 0.72, (math.cos(r) * 0.12, math.sin(r) * 0.12, 0.2), "WoodDark",
+              (62 * math.cos(r + math.pi / 2), 62 * math.sin(r + math.pi / 2), 0), verts=7)
+    b.cyl(0.25, 0.42, (0, 0, 0.3), "Red", verts=7, r2=0.02)
+    b.cyl(0.17, 0.52, (0.03, 0.02, 0.33), "Yellow", verts=7, r2=0.01)
+    b.col((0.95, 0.95, 0.3), (0, 0, 0.15))
+    return b.finish()
+
+
 BUILDS = [item_can, item_bottle, item_bandage, item_medkit, item_ammo, item_herb, item_wood, item_scrap, item_cloth,
           item_parts, item_charm, node_herb, node_woodpile, node_scrappile, crate, tansu, toolbox, locker, jizo, well,
           kei_truck, tiller, road_sign, bamboo_fence, stone_lantern, crate_stack, tire_stack, mailbox, hasa, bicycle,
-          bench, torii_small, shelf, low_table, rice_bags]
+          bench, torii_small, shelf, low_table, rice_bags, workbench, storage_chest, bedroll, campfire]
 
 
 def export(obj, path):

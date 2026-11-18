@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13ee691a92db6e04a94371e216fca390, type: 3}
+  m_Name: GameCatalog
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Crafting.GameCatalog
+  items:
+  - {fileID: 11400000, guid: 303b5720bd11dab4d924f5f02fadf457, type: 2}
+  - {fileID: 11400000, guid: 0898e304c46b8a3478b1479fc98fa11d, type: 2}
+  - {fileID: 11400000, guid: 867b5e22879ad484ba5361118f1ab29b, type: 2}
+  - {fileID: 11400000, guid: 558687d8448e6df45a54682717f3cb59, type: 2}
+  - {fileID: 11400000, guid: 50bebdffb2e2aa84d96f6879e78cb5cd, type: 2}
+  - {fileID: 11400000, guid: a19a18ab9892439428c30c3079720308, type: 2}
+  - {fileID: 11400000, guid: 2b855f492abfbec4cb00c92cca9e32c8, type: 2}
+  - {fileID: 11400000, guid: c698e586c3a723d4a86d7262918127a5, type: 2}
+  - {fileID: 11400000, guid: 127abb343495f5e45a351b1a7e900332, type: 2}
+  - {fileID: 11400000, guid: f2540cd6437ce2a4dbc8012b19d76725, type: 2}
+  - {fileID: 11400000, guid: 0ee1dc90ddab46a40bd7d33673236cfc, type: 2}
+  - {fileID: 11400000, guid: 6a0f18db0f4a2ec47a276528265c3987, type: 2}
+  - {fileID: 11400000, guid: fdcbe048a2736a34f9ef270e6624ccc2, type: 2}
+  - {fileID: 11400000, guid: 32850d485d8211e40a17438c93bd4c66, type: 2}
+  recipes:
+  - {fileID: 11400000, guid: 918d24d9be6b9004185160023dc0c443, type: 2}
+  - {fileID: 11400000, guid: e815d93a863f20f479d5e7daa365a907, type: 2}
+  - {fileID: 11400000, guid: 7f9095f191254374fa442ff78660f22e, type: 2}
+  - {fileID: 11400000, guid: 7f8711a6d23821648b586f18c12b0f47, type: 2}
+  - {fileID: 11400000, guid: b9de8b1dec273724abc38f6e0f13cdf7, type: 2}
+  upgrades:
+  - {fileID: 11400000, guid: eba294afe6e2d774d8a9750355bfea2d, type: 2}
+  - {fileID: 11400000, guid: 7888c6436a746f44794fe5d6122da91e, type: 2}
+  - {fileID: 11400000, guid: 4fad9c9671e44554891137deecb1c031, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: d4011ab2605f65b45b32dbdaa9efb3c1, type: 2}
+  - {fileID: 11400000, guid: 50a804284606e9b44ba42357394a7fa7, type: 2}

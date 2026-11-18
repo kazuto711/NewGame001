@@ -43,7 +43,7 @@ namespace Matoi.Tests
             indicator = player.GetComponent<StealthIndicator>();
             Time.timeScale = 1f;
             motor.Teleport(new Vector3(1.5f, 0.1f, -2f), 0f);
-            var all = EnemyBrain.All.ToArray();
+            var all = EnemyBrain.All.OrderBy(x => x.name).ToArray();   // 先頭は基本の侵食者
             enemy = all[0];
             for (int i = 0; i < all.Length; i++) all[i].PlaceAt(new Vector3(40f + i * 3f, 0.1f, 40f), 0f);
             yield return new WaitForSeconds(0.5f);
@@ -247,7 +247,7 @@ namespace Matoi.Tests
         {
             yield return Load();
             yield return Crouch();
-            var other = EnemyBrain.All.First(e => e != enemy);
+            var other = EnemyBrain.All.OrderBy(x => x.name).First(e => e != enemy);
             other.PlaceAt(motor.transform.position + new Vector3(-12f, 0f, -2f), 270f);
             var health = enemy.GetComponent<Health>();
             health.Configure(500f, Faction.Hostile);

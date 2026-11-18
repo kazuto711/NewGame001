@@ -43,7 +43,7 @@ MonoBehaviour:
   moveSpread: 3
   knockback: 1
   magazineSize: 12
-  reserveAmmo: -1
+  reserveAmmo: 48
   reloadTime: 1.2
   recoilKick: 0.06
   recoilPitch: 9

@@ -1,0 +1,168 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c17043cb2a2402d499cafa4bc5559a2e, type: 3}
+  m_Name: Mission_01
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Missions.MissionDefinition
+  title: "\u7B2C\u4E00\u8A71\u3000\u793E\u306E\u706F"
+  steps:
+  - text: "\u9053\u3070\u305F\u306E\u62F3\u9283\u5F3E\u3092\u62FE\u3046"
+    kind: 0
+    markerGroup: start_ammo
+    count: 1
+    item: {fileID: 11400000, guid: a19a18ab9892439428c30c3079720308, type: 2}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: 
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u2026\u2026\u805E\u3053\u3048\u307E\u3059\u304B\u3002\u3053\u3061\u3089\u30DF\u30AA\u3002\u305D\u3053\u3067\u5012\u308C\u3066\u3044\u305F\u4EBA\u3001\u52D5\u3051\u307E\u3059\u304B\u3002"
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u540D\u524D\u3082\u601D\u3044\u51FA\u305B\u306A\u3044\uFF1F\u3000\u4ECA\u306F\u5F8C\u56DE\u3057\u3067\u3059\u3002\u8DB3\u5143\u306E\u5F3E\u3092\u62FE\u3063\u3066\u304F\u3060\u3055\u3044\u3002"
+    spawns: []
+  - text: "\u8FD1\u3065\u3044\u3066\u304F\u308B\u4FB5\u98DF\u8005\u3092\u5012\u3059"
+    kind: 1
+    markerGroup: first_enemy
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: 
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u5357\u304B\u3089\u4FB5\u98DF\u8005\u304C\u6765\u307E\u3059\u3002\u3082\u3046\u4EBA\u3058\u3083\u3042\u308A\u307E\u305B\u3093\u3002\u305F\u3081\u3089\u308F\u306A\u3044\u3067\u3002"
+    spawns:
+    - enemyId: Infected
+      prefab: {fileID: 994888145813967787, guid: 5246fae5fab5d254e8ce1456df6d5f21, type: 3}
+      marker: first_enemy
+  - text: "\u6771\u306E\u8FB2\u5BB6\u306E\u7D0D\u5C4B\u307E\u3067\u884C\u304F"
+    kind: 2
+    markerGroup: base
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: 
+    radius: 7
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u6771\u306B\u7D0D\u5C4B\u304C\u3042\u308A\u307E\u3059\u3002\u4EE5\u524D\u3001\u79C1\u305F\u3061\u304C\u4F7F\u3063\u3066\u3044\u305F\u5834\u6240\u3067\u3059\u3002"
+    spawns: []
+  - text: "\u7D0D\u5C4B\u306E\u5BDD\u5E8A\u3067\u4F11\u3080"
+    kind: 4
+    markerGroup: bed
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: rest
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u305D\u3053\u306A\u3089\u5974\u3089\u306F\u8FD1\u5BC4\u308A\u307E\u305B\u3093\u3002\u5BDD\u5E8A\u3067\u5C11\u3057\u4F11\u3093\u3067\u304F\u3060\u3055\u3044\u3002"
+    spawns: []
+  - text: "\u5E03\u5207\u308C\u3068\u85AC\u8349\u3092\u96C6\u3081\u3001\u4F5C\u696D\u53F0\u3067\u5305\u5E2F\u3092\u4F5C\u308B"
+    kind: 3
+    markerGroup: craft
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 11400000, guid: 918d24d9be6b9004185160023dc0c443, type: 2}
+    enemyName: 
+    signal: 
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u3053\u306E\u5148\u306F\u85AC\u306A\u3057\u3067\u306F\u6301\u3061\u307E\u305B\u3093\u3002\u5E03\u5207\u308C
+        2 \u679A\u3068\u85AC\u8349 1 \u675F\u3067\u5305\u5E2F\u304C\u4F5C\u308C\u307E\u3059\u3002"
+    spawns: []
+  - text: "\u7121\u7DDA\u6A5F\u306E\u90E8\u54C1\u3092\u96C6\u3081\u308B"
+    kind: 0
+    markerGroup: radio_part
+    count: 3
+    item: {fileID: 11400000, guid: fdcbe048a2736a34f9ef270e6624ccc2, type: 2}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: 
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u79C1\u306E\u7121\u7DDA\u6A5F\u306F\u3082\u3046\u9650\u754C\u3067\u3059\u3002\u305D\u3061\u3089\u3067\u76F4\u305B\u308C\u3070\u3001\u793E\u306E\u69D8\u5B50\u304C\u5206\u304B\u308B\u306F\u305A\u3002"
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u90E8\u54C1\u306F\u30D0\u30B9\u3001\u5DE5\u4E8B\u73FE\u5834\u3001\u8535\u306E
+        3 \u304B\u6240\u3002\u3069\u3053\u3082\u4FB5\u98DF\u8005\u304C\u5DE3\u304F\u3063\u3066\u3044\u307E\u3059\u3002"
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u6BBB\u3092\u80CC\u8CA0\u3063\u305F\u5974\u306B\u9283\u306F\u52B9\u304D\u306B\u304F\u3044\u3002\u61D0\u306B\u5165\u3063\u3066\u6BB4\u3063\u3066\u304F\u3060\u3055\u3044\u3002"
+    spawns:
+    - enemyId: Heavy
+      prefab: {fileID: 1841431059844026834, guid: f51c9f8ad509f9e47968d5bdfd41d779, type: 3}
+      marker: guard_bus
+    - enemyId: Fast
+      prefab: {fileID: 4389155280455219591, guid: ec4916278bdb0e34b998434c3e7f244e, type: 3}
+      marker: guard_site_a
+    - enemyId: Fast
+      prefab: {fileID: 4389155280455219591, guid: ec4916278bdb0e34b998434c3e7f244e, type: 3}
+      marker: guard_site_b
+    - enemyId: Ranged
+      prefab: {fileID: 8906110647487230260, guid: 7a762f0ea3d79c94bab7a015be40fb0c, type: 3}
+      marker: guard_kura
+  - text: "\u4F5C\u696D\u53F0\u3067\u7121\u7DDA\u6A5F\u3092\u4FEE\u7406\u3059\u308B"
+    kind: 3
+    markerGroup: bench
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 11400000, guid: b9de8b1dec273724abc38f6e0f13cdf7, type: 2}
+    enemyName: 
+    signal: 
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u5168\u90E8\u305D\u308D\u3044\u307E\u3057\u305F\u306D\u3002\u7D0D\u5C4B\u306E\u4F5C\u696D\u53F0\u3067\u7D44\u307F\u7ACB\u3066\u3066\u304F\u3060\u3055\u3044\u3002"
+    spawns: []
+  - text: "\u93AE\u5B88\u306E\u793E\u3067\u300C\u793E\u306E\u4E3B\u300D\u3092\u5012\u3059"
+    kind: 4
+    markerGroup: shrine
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: boss_defeated
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u805E\u3053\u3048\u307E\u3057\u305F\u2026\u2026\u793E\u306E\u65B9\u89D2\u304B\u3089\u3001\u3053\u306E\u571F\u5730\u306E\u4FB5\u98DF\u304C\u5E83\u304C\u3063\u3066\u3044\u307E\u3059\u3002"
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u793E\u306B\u5DE3\u304F\u3046\u5927\u7269\u3092\u5012\u305B\u3070\u3001\u6D41\u308C\u306F\u6B62\u307E\u308B\u306F\u305A\u3002\u5099\u3048\u3066\u304B\u3089\u5411\u304B\u3063\u3066\u304F\u3060\u3055\u3044\u3002"
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u5357\u306E\u30D1\u30EF\u30FC\u30A2\u30FC\u30DE\u30FC\u306F\u307E\u3060\u52D5\u304D\u307E\u3059\u3002\u4F7F\u3048\u308B\u3082\u306E\u306F\u5168\u90E8\u4F7F\u3063\u3066\u3002"
+    spawns: []
+  - text: "\u793E\u306E\u706F\u7C60\u306B\u706B\u3092\u3068\u3082\u3059"
+    kind: 4
+    markerGroup: lamp
+    count: 1
+    item: {fileID: 0}
+    recipe: {fileID: 0}
+    enemyName: 
+    signal: lamp_lit
+    radius: 6
+    radio:
+    - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+      text: "\u3084\u3063\u305F\u2026\u2026\uFF01\u3000\u793E\u306E\u706F\u7C60\u306B\u706B\u3092\u5165\u308C\u3066\u304F\u3060\u3055\u3044\u3002\u751F\u304D\u3066\u3044\u308B\u4EBA\u3078\u306E\u5408\u56F3\u306B\u306A\u308A\u307E\u3059\u3002"
+    spawns: []
+  endingRadio:
+  - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+    text: "\u898B\u3048\u307E\u3059\u3002\u8C37\u306E\u5411\u3053\u3046\u304B\u3089\u3067\u3082\u3001\u3042\u306A\u305F\u306E\u706F\u304C\u3002"
+  - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+    text: "\u3042\u308A\u304C\u3068\u3046\u3002\u2026\u2026\u3068\u3053\u308D\u3067\u3001\u3042\u306A\u305F\u304C\u5012\u308C\u3066\u3044\u305F\u5834\u6240\u306B\u3001\u5999\u306A\u5E03\u306E\u5207\u308C\u7AEF\u304C\u3042\u308A\u307E\u3057\u305F\u3002"
+  - speaker: "\u30DF\u30AA\uFF08\u7121\u7DDA\uFF09"
+    text: "\u307E\u308B\u3067\u3001\u8AB0\u304B\u304C\u8EAB\u306B\u307E\u3068\u3063\u3066\u3044\u305F\u3088\u3046\u306A\u3002"
+  endingText: "\u793E\u306B\u706F\u304C\u3068\u3082\u308A\u3001\u4FB5\u98DF\u306E\u6D41\u308C\u306F\u6B62\u307E\u3063\u305F\u3002\n\u3051\u308C\u3069\u3001\u5931\u308F\u308C\u305F\u8A18\u61B6\u3068\u3001\u3042\u306E\u5E03\u306E\u6B63\u4F53\u306F\u307E\u3060\u5206\u304B\u3089\u306A\u3044\u3002"

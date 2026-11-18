@@ -13,7 +13,7 @@ namespace Matoi.EditorTools
         [MenuItem("Matoi/Apply Combat Balance (M8 数値調整)")]
         public static void Apply()
         {
-            // 拳銃：弾無限の「頼れるサブ」。単発で正確、1体を約6発（1.2秒〜）
+            // 拳銃：頼れるサブ。単発で正確、1体を約6発（1.2秒〜）。弾は拾うか作業台で作る
             var pistol = AssetDatabase.LoadAssetAtPath<WeaponDefinition>("Assets/_Project/Data/Weapons/Weapon_Pistol.asset");
             if (pistol)
             {
@@ -21,7 +21,7 @@ namespace Matoi.EditorTools
                 pistol.fireRate = 5f;
                 pistol.spread = 0.8f;
                 pistol.magazineSize = 12;
-                pistol.reserveAmmo = -1;
+                pistol.reserveAmmo = 48;
                 pistol.knockback = 1.0f;
                 EditorUtility.SetDirty(pistol);
             }

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c88991a12a4557b44a902c8ac8cd881d, type: 3}
+  m_Name: Item_RadioPart
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.ItemDefinition
+  displayName: "\u7121\u7DDA\u6A5F\u306E\u90E8\u54C1"
+  description: "\u30DF\u30AA\u306E\u7121\u7DDA\u6A5F\u3092\u76F4\u3059\u306E\u306B\u5FC5\u8981\u306A\u90E8\u54C1\u30023
+    \u3064\u96C6\u3081\u3066\u4F5C\u696D\u53F0\u3067\u7D44\u307F\u7ACB\u3066\u308B\u3002"
+  category: 4
+  weight: 0
+  heal: 0
+  ammoFor: {fileID: 0}
+  ammoAmount: 0
+  worldModel: {fileID: 919132149155446097, guid: 4df0c9ac1f821294e804013a72d74055, type: 3}

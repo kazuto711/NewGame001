@@ -16,6 +16,7 @@ namespace Matoi.UI
         Inventory inventory;
         ExplorationTracker tracker;
         readonly List<(string text, float until)> messages = new List<(string, float)>();
+        readonly List<Matoi.Missions.MissionMarker> objectiveMarkers = new List<Matoi.Missions.MissionMarker>();
         string banner;
         float bannerUntil;
         GUIStyle promptStyle, feedStyle, bannerStyle, compassStyle, markerStyle;
@@ -97,6 +98,22 @@ namespace Matoi.UI
                 if (p.Discovered) continue;
                 Vector3 d = p.transform.position - transform.position;
                 DrawOnCompass(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, yaw, "◆", new Color(1f, 0.8f, 0.3f));
+            }
+            var home = Matoi.Crafting.BaseZone.Instance;
+            if (home)
+            {
+                Vector3 d = home.transform.position - transform.position;
+                DrawOnCompass(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, yaw, "拠", new Color(0.55f, 0.95f, 1f));
+            }
+            var mission = Matoi.Missions.MissionTracker.Instance;
+            if (mission)
+            {
+                mission.CollectMarkers(objectiveMarkers);
+                foreach (var marker in objectiveMarkers)
+                {
+                    Vector3 d = marker.transform.position - transform.position;
+                    DrawOnCompass(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, yaw, "★", new Color(0.55f, 0.95f, 1f));
+                }
             }
 
             void DrawOnCompass(float bearing, float view, string text, Color color)

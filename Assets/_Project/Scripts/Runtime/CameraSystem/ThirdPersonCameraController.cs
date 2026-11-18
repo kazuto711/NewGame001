@@ -230,14 +230,12 @@ namespace Matoi.CameraSystem
             }
         }
 
-        /// <summary>マウス操作の時はカーソルを画面に固定。Esc で解除、クリックで再び固定。</summary>
+        /// <summary>マウス操作の時はカーソルを画面に固定。メニューを開いている間は自由に動かせる。</summary>
         void HandleCursor()
         {
-            if (Application.isBatchMode) return;
-            var kb = Keyboard.current;
+            if (Application.isBatchMode || Matoi.UI.MenuState.IsOpen) return;
             var mouse = Mouse.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
-            else if (mouse != null && mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
             { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
         }
     }

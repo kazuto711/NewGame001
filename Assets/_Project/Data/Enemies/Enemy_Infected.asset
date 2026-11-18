@@ -32,7 +32,22 @@ MonoBehaviour:
   attackDamage: 15
   attackKnockback: 4
   attackLunge: 3
+  attackReach: 1
+  attackRadius: 0.75
+  ranged: 0
+  rangedRange: 13
+  rangedPreferredDistance: 9
+  rangedMinDistance: 5
+  rangedWindup: 0.7
+  rangedCooldown: 2.6
+  projectileDamage: 12
+  projectileSpeed: 13
+  projectileHeight: 1.5
+  projectileMaterial: {fileID: 0}
+  projectileColor: {r: 0.5, g: 1, b: 0.25, a: 1}
+  gunDamageScale: 1
   staggerTime: 0.3
   staggerCooldown: 0.8
   knockbackScale: 1
+  drops: {fileID: 11400000, guid: 7530773a5bb422f4c895546e2074ae50, type: 2}
   respawnDelay: 8

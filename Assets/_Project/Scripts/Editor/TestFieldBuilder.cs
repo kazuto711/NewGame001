@@ -366,8 +366,9 @@ namespace Matoi.EditorTools
         {
             var g = Group("Shrine", env).transform;
             const float cx = 22f;
-            Box("Hill", g, new Vector3(cx, 1.2f, 34), new Vector3(16, 2.4f, 14), "Ground_Dirt");
-            Box("Hill_Wall", g, new Vector3(cx, 1.2f, 26.9f), new Vector3(16, 2.4f, 0.3f), "Stone");
+            // 高台（ボス戦の場所なので広くとる：幅 24m、奥行 18m）
+            Box("Hill", g, new Vector3(cx, 1.2f, 36), new Vector3(24, 2.4f, 18), "Ground_Dirt");
+            Box("Hill_Wall", g, new Vector3(cx, 1.2f, 26.9f), new Vector3(24, 2.4f, 0.3f), "Stone");
             // 石段（段差の昇り降りテスト用。1段 0.3m）
             for (int i = 0; i < 8; i++)
             {
@@ -384,11 +385,11 @@ namespace Matoi.EditorTools
             Box("Shimaki", torii, new Vector3(0, 4.3f, 0), new Vector3(5.4f, 0.28f, 0.4f), "Torii_Red");
             Box("Kasagi", torii, new Vector3(0, 4.55f, 0), new Vector3(6.0f, 0.22f, 0.5f), "Torii_Black");
             // 祠
-            Box("Hokora", g, new Vector3(cx, 3.4f, 36), new Vector3(3f, 2.0f, 2.6f), "Wall_Wood");
-            Box("Hokora_Roof", g, new Vector3(cx, 4.6f, 36), new Vector3(3.8f, 0.3f, 3.4f), "Roof_Tile", new Vector3(0, 0, 0));
-            // 御神木
-            Tree(g, new Vector3(cx - 5.5f, 2.4f, 33), true, 1.6f);
-            Tree(g, new Vector3(cx + 5.5f, 2.4f, 37), true, 1.5f);
+            Box("Hokora", g, new Vector3(cx, 3.4f, 43), new Vector3(3f, 2.0f, 2.6f), "Wall_Wood");
+            Box("Hokora_Roof", g, new Vector3(cx, 4.6f, 43), new Vector3(3.8f, 0.3f, 3.4f), "Roof_Tile", new Vector3(0, 0, 0));
+            // 御神木（戦う場所をふさがないよう、奥の角に置く）
+            Tree(g, new Vector3(cx - 10.5f, 2.4f, 43.5f), true, 1.6f);
+            Tree(g, new Vector3(cx + 10.5f, 2.4f, 43.5f), true, 1.5f);
         }
 
         // ---------- 小物（電柱・廃車・ドラム缶・バス） ----------
@@ -522,12 +523,47 @@ namespace Matoi.EditorTools
                 e.name = $"Enemy_Infected_{i}";
                 e.transform.SetPositionAndRotation(EnemyPositions[i], Quaternion.Euler(0, R(0, 360), 0));
             }
+            PlaceEnemyVariants(g);
 
             // M8: ウェーブ式の戦闘テスト（Start / F2 で開始）
             var director = new GameObject("WaveDirector").AddComponent<Matoi.AI.WaveDirector>();
             var so = new SerializedObject(director);
             so.FindProperty("enemyPrefab").objectReferenceValue = prefab.GetComponent<Matoi.AI.EnemyBrain>();
+            var specials = so.FindProperty("specialEnemies");
+            specials.arraySize = EnemySetup.VariantIds.Length;
+            for (int i = 0; i < EnemySetup.VariantIds.Length; i++)
+                specials.GetArrayElementAtIndex(i).objectReferenceValue = EnemySetup.VariantPrefab(EnemySetup.VariantIds[i]).GetComponent<Matoi.AI.EnemyBrain>();
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            MissionSetup.LinkEnemies();      // 第一話で出す敵
+            MissionSetup.PlaceBossArena();   // ボス「社の主」と結界
+        }
+
+        // 種類の違う敵の持ち場。スタート地点の銃声が届かない、マップの外周に置く
+        static readonly (string id, Vector3 position)[] EnemyVariantPositions =
+        {
+            ("Fast", new Vector3(-30f, 0f, 26f)),     // 北西の田んぼ
+            ("Fast", new Vector3(30f, 0f, -38f)),     // 南東の工事現場の奥
+            ("Heavy", new Vector3(-14f, 0f, 37f)),    // 錆びたバスの奥
+            ("Heavy", new Vector3(-36f, 0f, -10f)),   // 西の畦
+            ("Ranged", new Vector3(36f, 0f, 24f)),    // 東の森の入口
+            ("Ranged", new Vector3(-24f, 0f, -38f)),  // 南西の外れ
+        };
+
+        static void PlaceEnemyVariants(Transform parent)
+        {
+            for (int i = 0; i < EnemyVariantPositions.Length; i++)
+            {
+                var (id, position) = EnemyVariantPositions[i];
+                if (!UnityEngine.AI.NavMesh.SamplePosition(position, out var hit, 8f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    Debug.LogError($"[Matoi] 敵を置ける場所がありません: {id} {position}");
+                    continue;
+                }
+                var e = (GameObject)PrefabUtility.InstantiatePrefab(EnemySetup.VariantPrefab(id), parent);
+                e.name = $"Enemy_Variant_{id}_{i}";
+                e.transform.SetPositionAndRotation(hit.position + Vector3.up * 0.05f, Quaternion.Euler(0, R(0, 360), 0));
+            }
         }
 
         // ---------- M6: 訓練用のかかし（撃つ・殴るの的） ----------

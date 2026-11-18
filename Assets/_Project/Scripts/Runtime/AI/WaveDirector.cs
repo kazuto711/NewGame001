@@ -16,6 +16,10 @@ namespace Matoi.AI
         public enum Phase { Inactive, Fighting, Break }
 
         [SerializeField] EnemyBrain enemyPrefab;
+        [Tooltip("第 2 ウェーブから混ざる特殊な敵")]
+        [SerializeField] EnemyBrain[] specialEnemies;
+        [Tooltip("何体に 1 体を特殊な敵にするか")]
+        [SerializeField] int specialEvery = 3;
         [Tooltip("各ウェーブの敵の数。最後以降は 2 体ずつ増える")]
         [SerializeField] int[] waveSizes = { 3, 5, 7 };
         [Tooltip("プレイヤーからこの距離の輪の上に出現（画面のすぐ外）")]
@@ -46,7 +50,8 @@ namespace Matoi.AI
             playerHealth = p.GetComponent<Health>();
             playerShooter = p.GetComponent<WeaponShooter>();
             var input = p.GetComponent<PlayerInputReader>();
-            if (input) input.DebugWavesPressed += () => { if (CurrentPhase == Phase.Inactive) StartWaves(); };
+            // 戦闘テストは開発中だけ（製品版のビルドでは F2 を押しても始まらない）
+            if (input && Debug.isDebugBuild) input.DebugWavesPressed += () => { if (CurrentPhase == Phase.Inactive) StartWaves(); };
         }
 
         public void StartWaves()
@@ -67,6 +72,13 @@ namespace Matoi.AI
             CurrentPhase = Phase.Fighting;
         }
 
+        /// <summary>i 番目に出す敵。第 2 ウェーブからは、一定の間隔で特殊な敵が混ざる。</summary>
+        EnemyBrain PrefabFor(int i)
+        {
+            bool special = Wave >= 2 && specialEnemies != null && specialEnemies.Length > 0 && (i + 1) % Mathf.Max(1, specialEvery) == 0;
+            return special ? specialEnemies[(Wave + i / Mathf.Max(1, specialEvery)) % specialEnemies.Length] : enemyPrefab;
+        }
+
         void Spawn(int i, int n)
         {
             // プレイヤーを囲む輪の上（少しずつ角度をずらす）。歩ける場所に置けなければ近くを探す
@@ -76,7 +88,7 @@ namespace Matoi.AI
                 float r = Random.Range(spawnRadius.x, spawnRadius.y);
                 Vector3 p = player.position + Quaternion.Euler(0, angle + attempt * 37f, 0) * Vector3.forward * r;
                 if (!NavMesh.SamplePosition(p, out var hit, 3f, NavMesh.AllAreas)) continue;
-                var e = Instantiate(enemyPrefab, hit.position + Vector3.up * 0.05f,
+                var e = Instantiate(PrefabFor(i), hit.position + Vector3.up * 0.05f,
                     Quaternion.LookRotation(Flat(player.position - hit.position)));
                 e.name = $"Wave{Wave}_Enemy{i}";
                 e.RespawnEnabled = false;
@@ -125,10 +137,11 @@ namespace Matoi.AI
 
         void OnGUI()
         {
+            if (CurrentPhase == Phase.Inactive && !Matoi.Missions.GameFlow.ShowDevInfo) return;
             style ??= new GUIStyle(GUI.skin.label) { fontSize = 26, alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold };
             string text = CurrentPhase switch
             {
-                Phase.Inactive => "Start / F2 : 戦闘テスト開始",
+                Phase.Inactive => "F2 : 戦闘テスト開始",
                 Phase.Fighting => $"WAVE {Wave}　　残り {alive.Count}　　撃破 {Kills}",
                 _ => $"WAVE {Wave} クリア！　次のウェーブまで {Mathf.CeilToInt(breakEnd - Time.time)}",
             };

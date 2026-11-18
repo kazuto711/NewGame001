@@ -60,10 +60,10 @@ namespace Matoi.CameraSystem
 
         void OnGUI()
         {
-            if (!showLabel) return;
+            if (!showLabel || !Matoi.Missions.GameFlow.ShowDevInfo) return;
             style ??= new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.UpperRight };
             string text = (Mode == CameraMode.TopDown ? "視点：見下ろし" : "視点：三人称") + "　（F3 / 十字キー↓ で切替）";
-            if (Mode == CameraMode.ThirdPerson) text += "\n肩の左右：V / R3　　カーソル解除：Esc";
+            if (Mode == CameraMode.ThirdPerson) text += "\n肩の左右：V / R3";
             GUI.color = new Color(0, 0, 0, 0.6f);
             GUI.Label(new Rect(Screen.width - 522, 14, 510, 50), text, style);
             GUI.color = Color.white;

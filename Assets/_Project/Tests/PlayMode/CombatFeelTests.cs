@@ -138,7 +138,7 @@ namespace Matoi.Tests
         public IEnumerator ComboHits_HaveStrongerHitStopEachStep()
         {
             yield return Load();
-            var enemy = EnemyBrain.All[0];
+            var enemy = EnemyBrain.All.OrderBy(x => x.name).First();
             enemy.enabled = false;
             enemy.GetComponent<Health>().Configure(1000f, Faction.Hostile);
             enemy.PlaceAt(motor.transform.position + motor.transform.forward * 1.1f, 180f);
@@ -166,7 +166,7 @@ namespace Matoi.Tests
         {
             yield return Load();
             yield return Tap(pad.rightShoulder, 0.5f);
-            var enemy = EnemyBrain.All[0];
+            var enemy = EnemyBrain.All.OrderBy(x => x.name).First();
             var health = enemy.GetComponent<Health>();
             health.Configure(1000f, Faction.Hostile);
             enemy.PlaceAt(motor.transform.position + Vector3.forward * 6f, 180f);

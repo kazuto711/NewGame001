@@ -544,17 +544,6 @@
                 },
                 {
                     "name": "",
-                    "id": "6d1f2a10-0000-4000-8000-000000000504",
-                    "path": "<Gamepad>/start",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad",
-                    "action": "DebugWaves",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "6d1f2a10-0000-4000-8000-000000000505",
                     "path": "<Keyboard>/f2",
                     "interactions": "",

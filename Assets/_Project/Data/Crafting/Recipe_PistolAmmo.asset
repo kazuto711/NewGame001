@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e196a5b93bbed245936a0a15d117f57, type: 3}
+  m_Name: Recipe_PistolAmmo
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Crafting.RecipeDefinition
+  result: {fileID: 11400000, guid: a19a18ab9892439428c30c3079720308, type: 2}
+  resultCount: 1
+  ingredients:
+  - item: {fileID: 11400000, guid: 127abb343495f5e45a351b1a7e900332, type: 2}
+    count: 2

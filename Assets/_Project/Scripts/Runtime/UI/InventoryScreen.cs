@@ -23,7 +23,12 @@ namespace Matoi.UI
         CursorLockMode savedLock;
         bool savedCursorVisible;
         string status = "";
+        float resetConfirmUntil = -1f;
         GUIStyle titleStyle, rowStyle, textStyle, hintStyle;
+
+        const float ResetConfirmSeconds = 4f;
+        /// <summary>「最初からやり直す」の確認中か。</summary>
+        public bool IsConfirmingReset => Time.unscaledTime < resetConfirmUntil;
 
         public bool IsOpen { get; private set; }
 
@@ -66,6 +71,8 @@ namespace Matoi.UI
                 if ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.eKey.wasPressedThisFrame)) || (pad != null && pad.buttonSouth.wasPressedThisFrame)) UseSelected();
                 if ((kb != null && kb.xKey.wasPressedThisFrame) || (pad != null && pad.buttonWest.wasPressedThisFrame)) DropSelected();
             }
+            if ((kb != null && kb.backspaceKey.wasPressedThisFrame) || (pad != null && pad.selectButton.wasPressedThisFrame))
+                RequestReset();
             if ((kb != null && kb.tKey.wasPressedThisFrame) || (pad != null && pad.buttonNorth.wasPressedThisFrame))
             {
                 Close();
@@ -105,11 +112,25 @@ namespace Matoi.UI
 
         ItemDefinition Selected => cursor >= 0 && cursor < inventory.Stacks.Count ? inventory.Stacks[cursor].item : null;
 
+        /// <summary>1 回目は確認の表示だけ。数秒以内にもう一度押すと、記録を消して最初からやり直す。</summary>
+        public void RequestReset()
+        {
+            if (!IsConfirmingReset)
+            {
+                resetConfirmUntil = Time.unscaledTime + ResetConfirmSeconds;
+                status = "記録を消して最初からやり直します。よければもう一度押してください";
+                return;
+            }
+            resetConfirmUntil = -1f;
+            Close();
+            GetComponent<Matoi.SaveSystem.SaveManager>()?.ResetGame();
+        }
+
         public void UseSelected()
         {
             var item = Selected;
             if (!item) return;
-            if (!item.IsUsable) { status = "これは素材です。今は使えません"; return; }
+            if (!item.IsUsable) { status = item.category == ItemCategory.Key ? "大切な物です" : "これは素材です。拠点の作業台で使えます"; return; }
             inventory.Use(item);
             ClampCursor();
         }
@@ -118,15 +139,14 @@ namespace Matoi.UI
         {
             var item = Selected;
             if (!item) return;
-            inventory.Drop(item);
-            status = $"{item.displayName}を捨てた";
+            if (inventory.Drop(item)) status = $"{item.displayName}を捨てた";
             ClampCursor();
         }
 
         void ClampCursor() => cursor = Mathf.Clamp(cursor, 0, Mathf.Max(0, inventory.Stacks.Count - 1));
 
         static string CategoryName(ItemCategory c) =>
-            c == ItemCategory.Consumable ? "回復" : c == ItemCategory.Ammo ? "弾薬" : c == ItemCategory.Valuable ? "貴重品" : "素材";
+            c == ItemCategory.Consumable ? "回復" : c == ItemCategory.Ammo ? "弾薬" : c == ItemCategory.Valuable ? "貴重品" : c == ItemCategory.Key ? "大切な物" : "素材";
 
         void OnGUI()
         {
@@ -165,7 +185,7 @@ namespace Matoi.UI
             float infoX = panel.x + listW + 16f, infoW = w - listW - 40f;
             if (selected)
             {
-                GUI.Label(new Rect(infoX, top, infoW, 30f), selected.displayName, titleStyle);
+                GUI.Label(new Rect(infoX, top - 6f, infoW, 44f), selected.displayName, titleStyle);
                 GUI.Label(new Rect(infoX, top + 40f, infoW, 26f), $"{CategoryName(selected.category)}　{selected.weight:0.0} kg", textStyle);
                 GUI.Label(new Rect(infoX, top + 72f, infoW, 150f), selected.description, textStyle);
                 if (selected.IsUsable && GUI.Button(new Rect(infoX, top + 232f, infoW * 0.48f, 40f), "使う", rowStyle)) UseSelected();
@@ -173,7 +193,7 @@ namespace Matoi.UI
             }
             GUI.Label(new Rect(infoX, top + 284f, infoW, 60f), status, textStyle);
             GUI.Label(new Rect(panel.x, panel.yMax - 40f, w, 30f),
-                "↑↓ 選択　A / Enter 使う　X 捨てる　Y / T 主人公を選ぶ　B / I 閉じる", hintStyle);
+                "↑↓ 選択　A / Enter 使う　X 捨てる　Y / T 主人公を選ぶ　View / BackSpace 最初から　B / I 閉じる", hintStyle);
         }
     }
 }

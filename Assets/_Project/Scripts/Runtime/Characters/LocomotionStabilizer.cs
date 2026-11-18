@@ -22,13 +22,23 @@ namespace Matoi.Characters
         [SerializeField, Range(0f, 1f)] float sprintStrength = 0.5f;
         [SerializeField] float blendSpeed = 6f;
 
+        [Header("ジャンプ中の姿勢")]
+        [Tooltip("ジャンプ中、上半身がこの角度より後ろへ反らないようにする（度。プラスが前傾）")]
+        [SerializeField] float jumpMinLean = 3f;
+        [Tooltip("ジャンプの補正を入れる速さ。踏み切りの一瞬に間に合うよう速くしている")]
+        [SerializeField] float jumpBlendSpeed = 24f;
+
+        static readonly int JumpStartState = Animator.StringToHash("JumpStart");
+        static readonly int JumpLoopState = Animator.StringToHash("JumpLoop");
+        static readonly int JumpLandState = Animator.StringToHash("JumpLand");
+
         CharacterMotor motor;
         CharacterAnimator characterAnimator;
         Animator animator;
         Transform hips, spine, chest, upperChest, neck;
         Transform lUpperArm, rUpperArm;
         Transform lThigh, lCalf, lFoot, rThigh, rCalf, rFoot;
-        float weight;
+        float weight, jumpWeight;
 
         void Awake()
         {
@@ -54,8 +64,35 @@ namespace Matoi.Characters
         bool ShouldStabilize => motor && motor.IsGrounded && !motor.IsAirborne && !motor.IsDashing && !motor.IsCrouching
                                 && motor.Speed > 0.05f && !(characterAnimator && characterAnimator.ActionOwnsArms);
 
+        static bool IsJumpState(AnimatorStateInfo state) =>
+            state.shortNameHash == JumpStartState || state.shortNameHash == JumpLoopState || state.shortNameHash == JumpLandState;
+
+        bool IsJumping => motor && !(characterAnimator && characterAnimator.ActionOwnsArms)
+                          && (motor.IsAirborne || IsJumpState(animator.GetCurrentAnimatorStateInfo(0)) || IsJumpState(animator.GetNextAnimatorStateInfo(0)));
+
+        /// <summary>
+        /// ジャンプのアニメーションと武器の構えが重なると、上半身が後ろへ大きく反る。
+        /// 腰から上だけを起こし、脚はアニメーションの形のまま残す。
+        /// </summary>
+        void StraightenJump()
+        {
+            jumpWeight = Mathf.MoveTowards(jumpWeight, IsJumping ? 1f : 0f, jumpBlendSpeed * Time.deltaTime);
+            if (jumpWeight <= 0f || !hips || !neck || !lThigh || !rThigh) return;
+
+            Transform root = animator.transform;
+            Vector3 torso = Vector3.ProjectOnPlane(neck.position - hips.position, root.right);
+            float lean = Vector3.SignedAngle(root.up, torso, root.right);
+            if (lean >= jumpMinLean) return;
+
+            Quaternion lRot = lThigh.rotation, rRot = rThigh.rotation;
+            hips.rotation = Quaternion.AngleAxis((jumpMinLean - lean) * jumpWeight, root.right) * hips.rotation;
+            lThigh.rotation = lRot;
+            rThigh.rotation = rRot;
+        }
+
         void LateUpdate()
         {
+            StraightenJump();
             weight = Mathf.MoveTowards(weight, ShouldStabilize ? 1f : 0f, blendSpeed * Time.deltaTime);
             if (weight <= 0f || !hips || !spine || !neck || !lUpperArm || !rUpperArm) return;
 

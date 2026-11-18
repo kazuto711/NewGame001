@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Item_Parts
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.ItemDefinition
   displayName: "\u6A5F\u68B0\u90E8\u54C1"
-  description: "\u6B6F\u8ECA\u3084\u9285\u7DDA\u3002\u7E8F\u306E\u4FEE\u7406\u306B\u5F79\u7ACB\u3061\u305D\u3046\u3060\u3002"
+  description: "\u6B6F\u8ECA\u3084\u9285\u7DDA\u3002\u5C0F\u9283\u5F3E\u306E\u6750\u6599\u3084\u6B66\u5668\u306E\u5F37\u5316\u306B\u4F7F\u3046\u3002"
   category: 2
   weight: 0.5
   heal: 0

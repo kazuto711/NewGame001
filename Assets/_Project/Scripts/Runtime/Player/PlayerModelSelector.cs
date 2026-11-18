@@ -115,8 +115,10 @@ namespace Matoi.Player
             bool changed = i != current;
             Close();
             if (!changed) return;
+            GetComponent<Matoi.SaveSystem.SaveManager>()?.Save();   // 読み直しても持ち物などが消えないように
             PlayerPrefs.SetString(PrefKey, variants[i].id);
             PlayerPrefs.Save();
+            Matoi.Missions.GameFlow.SkipTitleOnce = true;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
@@ -147,7 +149,7 @@ namespace Matoi.Player
             }
             GUI.color = Color.white;
             GUI.Label(new Rect(panel.x + 20f, panel.yMax - 72f, w - 40f, 64f),
-                "十字キー / 矢印で選択　A / Enter で決定　B / Esc で戻る\n別の主人公に決めると、フィールドを最初から読み直します", hintStyle);
+                "十字キー / 矢印で選択　A / Enter で決定　B / Esc で戻る\n別の主人公に決めると、記録してからフィールドを読み直します", hintStyle);
         }
     }
 }

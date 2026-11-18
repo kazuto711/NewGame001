@@ -260,6 +260,22 @@ namespace Matoi.EditorTools
             root.AddComponent<Matoi.UI.FieldHud>();
             root.AddComponent<Matoi.UI.InventoryScreen>();
 
+            // 拠点：保管箱の中身、クラフトと武器強化、設備の画面、記録
+            root.AddComponent<Matoi.Crafting.ItemStorage>();
+            var crafting = root.AddComponent<Matoi.Crafting.PlayerCrafting>();
+            SetField(crafting, "catalog", FieldContentSetup.LoadCatalog());
+            root.AddComponent<Matoi.UI.WorkbenchScreen>();
+            root.AddComponent<Matoi.UI.StorageScreen>();
+            root.AddComponent<Matoi.SaveSystem.SaveManager>();
+
+            // ミッションと画面：目的の進行、体力や目的の表示、タイトル、一時停止、エンディング
+            var mission = root.AddComponent<Matoi.Missions.MissionTracker>();
+            SetField(mission, "mission", MissionSetup.LoadMission());
+            root.AddComponent<Matoi.UI.GameHud>();
+            root.AddComponent<Matoi.UI.TitleScreen>();
+            root.AddComponent<Matoi.UI.PauseMenu>();
+            root.AddComponent<Matoi.UI.EndingScreen>();
+
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
             return prefab;
@@ -367,6 +383,7 @@ namespace Matoi.EditorTools
         {
             var def = LoadOrCreateWeapon(PistolData, out _);
             def.visualScale = 1f;   // 実寸。拡大すると指が銃を突き抜ける
+            def.reserveAmmo = 48;   // 弾は有限。拾うか、拠点の作業台で作る
             // 操作感：1 発の跳ね上がりは大きいが、すぐ元に戻る。軽くて取り回しが良い
             def.recoilKick = 0.06f;
             def.recoilPitch = 9f;

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebb40c384fdce4b44a6866f5ae538d0d, type: 3}
+  m_Name: Move_Heavy
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Characters.MovementProfile
+  walkSpeed: 1
+  jogSpeed: 2.2
+  sprintSpeed: 3.2
+  walkInputThreshold: 0.5
+  acceleration: 6
+  sprintAcceleration: 4.2
+  deceleration: 9
+  turnSpeedIdle: 300
+  turnSpeedMoving: 210
+  turnSpeedSprint: 135
+  sharpTurnSpeedFactor: 0.45
+  aimMoveSpeedFactor: 0.6
+  aimTurnSpeed: 270
+  pivotAngle: 135
+  pivotMinSpeed: 2.5
+  pivotDeceleration: 34
+  inputSmoothing: 0.05
+  cameraDistanceOffset: 0
+  canJump: 1
+  jumpHeight: 1.1
+  airControl: 0.35
+  canCrouch: 1
+  crouchSpeed: 1.7
+  crouchHeightRatio: 0.62
+  gravity: -25
+  maxFallSpeed: -40

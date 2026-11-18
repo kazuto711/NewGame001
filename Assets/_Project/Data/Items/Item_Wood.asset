@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Item_Wood
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.ItemDefinition
   displayName: "\u6728\u6750"
-  description: "\u307E\u3060\u4F7F\u3048\u308B\u677F\u5207\u308C\u3002"
+  description: "\u307E\u3060\u4F7F\u3048\u308B\u677F\u5207\u308C\u3002\u6B66\u5668\u306E\u5F37\u5316\u306B\u4F7F\u3046\u3002"
   category: 2
   weight: 1
   heal: 0

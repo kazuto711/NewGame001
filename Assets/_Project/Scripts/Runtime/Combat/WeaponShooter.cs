@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Matoi.CameraSystem;
 using Matoi.Characters;
+using Matoi.Crafting;
 using UnityEngine;
 
 namespace Matoi.Combat
@@ -29,6 +30,12 @@ namespace Matoi.Combat
         float nextFireTime, reloadEnd = -1f;
         Animator animator;
         Collider[] ownColliders;
+        PlayerCrafting crafting;   // 武器強化（敵には付いていない）
+
+        int MagazineSizeOf(WeaponDefinition def) => crafting ? crafting.MagazineSize(def) : def.magazineSize;
+        float DamageScaleOf(WeaponDefinition def) => crafting ? crafting.DamageScale(def) : 1f;
+        /// <summary>強化で弾のばらつきと反動に掛かる倍率。</summary>
+        public float StabilityScaleOf(WeaponDefinition def) => crafting ? crafting.StabilityScale(def) : 1f;
 
         [Header("撃ち続けた時の広がり")]
         [Tooltip("1発ごとの広がり（反動の角度に掛ける）")]
@@ -48,7 +55,7 @@ namespace Matoi.Combat
                 var def = holder ? holder.CurrentWeapon : null;
                 if (!def) return 0f;
                 float moveT = motor && motor.Profile ? Mathf.Clamp01(motor.Speed / motor.Profile.jogSpeed) : 0f;
-                return def.spread + def.moveSpread * moveT + bloom;
+                return (def.spread + def.moveSpread * moveT) * StabilityScaleOf(def) + bloom;
             }
         }
         public Vector3 LastFireDirection { get; private set; }
@@ -59,6 +66,8 @@ namespace Matoi.Combat
             ? Mathf.Clamp01(1f - (reloadEnd - Time.time) / Mathf.Max(0.1f, holder.CurrentWeapon.reloadTime)) : 0f;
         public int AmmoInMagazine => Current?.mag ?? 0;
         public int ReserveAmmo => Current?.reserve ?? 0;
+        /// <summary>今の武器の弾倉に入る数（強化込み）。</summary>
+        public int MagazineCapacity => holder && holder.CurrentWeapon ? MagazineSizeOf(holder.CurrentWeapon) : 0;
         public int ShotsFired { get; private set; }
 
         /// <summary>撃った時（命中の有無にかかわらず）。</summary>
@@ -73,7 +82,7 @@ namespace Matoi.Combat
                 var def = holder ? holder.CurrentWeapon : null;
                 if (!def) return null;
                 if (!ammo.TryGetValue(def, out var s))
-                    ammo[def] = s = new AmmoState { mag = def.magazineSize, reserve = def.reserveAmmo };
+                    ammo[def] = s = new AmmoState { mag = MagazineSizeOf(def), reserve = def.reserveAmmo };
                 return s;
             }
         }
@@ -82,6 +91,7 @@ namespace Matoi.Combat
         {
             if (!holder) holder = GetComponent<WeaponHolder>();
             if (!motor) motor = GetComponent<CharacterMotor>();
+            crafting = GetComponent<PlayerCrafting>();
             animator = GetComponentInChildren<Animator>();
             ownColliders = GetComponentsInChildren<Collider>();
             holder.WeaponChanged += _ => CancelReload();
@@ -94,7 +104,7 @@ namespace Matoi.Combat
         {
             var def = holder.CurrentWeapon;
             var s = Current;
-            if (def == null || s == null || IsReloading || s.mag >= def.magazineSize || s.reserve == 0) return;
+            if (def == null || s == null || IsReloading || s.mag >= MagazineSizeOf(def) || s.reserve == 0) return;
             reloadEnd = Time.time + def.reloadTime;
             // ライフルは WeaponHolder が両手の動きを作る。拳銃はアニメーションを、武器のリロード時間に合わせて再生する
             if (animator && def.stance == WeaponStance.Pistol)
@@ -116,14 +126,29 @@ namespace Matoi.Combat
             return 0f;
         }
 
-        /// <summary>全武器の弾を満タンにする（ウェーブ報酬・補給所など）。</summary>
+        /// <summary>全武器の弾を満タンにする（ウェーブ報酬・補給所など）。初期値より多く持っている時は減らさない。</summary>
         public void RefillAll()
         {
             foreach (var kv in ammo)
             {
-                kv.Value.mag = kv.Key.magazineSize;
-                kv.Value.reserve = kv.Key.reserveAmmo;
+                kv.Value.mag = MagazineSizeOf(kv.Key);
+                kv.Value.reserve = kv.Key.reserveAmmo < 0 ? -1 : Mathf.Max(kv.Value.reserve, kv.Key.reserveAmmo);
             }
+        }
+
+        /// <summary>弾の状態を読む（セーブ用）。まだ使っていない武器は false。</summary>
+        public bool TryGetAmmo(WeaponDefinition def, out int magazine, out int reserve)
+        {
+            bool known = ammo.TryGetValue(def, out var s);
+            magazine = known ? s.mag : 0;
+            reserve = known ? s.reserve : 0;
+            return known;
+        }
+
+        /// <summary>弾の状態を戻す（ロード用）。</summary>
+        public void SetAmmo(WeaponDefinition def, int magazine, int reserve)
+        {
+            if (def) ammo[def] = new AmmoState { mag = Mathf.Clamp(magazine, 0, MagazineSizeOf(def)), reserve = reserve };
         }
 
         /// <summary>指定の武器の予備弾を増やす。増えた数を返す（弾が無限の武器は 0）。</summary>
@@ -131,7 +156,7 @@ namespace Matoi.Combat
         {
             if (!def || amount <= 0) return 0;
             if (!ammo.TryGetValue(def, out var s))
-                ammo[def] = s = new AmmoState { mag = def.magazineSize, reserve = def.reserveAmmo };
+                ammo[def] = s = new AmmoState { mag = MagazineSizeOf(def), reserve = def.reserveAmmo };
             if (s.reserve < 0) return 0;
             s.reserve += amount;
             return amount;
@@ -171,7 +196,7 @@ namespace Matoi.Combat
             holder.SupportHandWeight = 1f;
             var s = Current;
             if (s == null || def == null) return;
-            int need = def.magazineSize - s.mag;
+            int need = MagazineSizeOf(def) - s.mag;
             int take = s.reserve < 0 ? need : Mathf.Min(need, s.reserve);
             s.mag += take;
             if (s.reserve >= 0) s.reserve -= take;
@@ -196,7 +221,8 @@ namespace Matoi.Combat
                 dir = Quaternion.AngleAxis(r.x, Vector3.up) * Quaternion.AngleAxis(r.y, right.normalized) * baseDir;
             }
             else dir = Quaternion.AngleAxis(UnityEngine.Random.Range(-spread, spread), Vector3.up) * baseDir;
-            bloom = Mathf.Min(bloom + def.recoilPitch * bloomPerRecoil, maxBloom);
+            float stability = StabilityScaleOf(def);
+            bloom = Mathf.Min(bloom + def.recoilPitch * bloomPerRecoil * stability, maxBloom);
             lastShotTime = Time.time;
             LastFireDirection = dir;
 
@@ -209,7 +235,7 @@ namespace Matoi.Combat
                 {
                     target.TakeDamage(new DamageInfo
                     {
-                        amount = def.damage, point = hit.point, direction = dir,
+                        amount = def.damage * DamageScaleOf(def), point = hit.point, direction = dir,
                         knockback = def.knockback, source = gameObject,
                     });
                     // 倒した瞬間だけ、時間を少し止めて手応えを出す（普通の命中では止めない）
@@ -224,7 +250,7 @@ namespace Matoi.Combat
             }
 
             ShotsFired++;
-            holder.AddRecoil(def.recoilKick, def.recoilPitch);
+            holder.AddRecoil(def.recoilKick * stability, def.recoilPitch * stability);
             if (animator && def.stance == WeaponStance.Pistol) animator.SetTrigger(FireId);
             CameraShake.Shake(def.recoilShake);
             var fx = CombatFx.Instance;

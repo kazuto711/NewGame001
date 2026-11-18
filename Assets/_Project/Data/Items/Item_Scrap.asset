@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Item_Scrap
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.ItemDefinition
   displayName: "\u9244\u304F\u305A"
-  description: "\u9306\u3073\u305F\u9244\u306E\u5207\u308C\u7AEF\u3002"
+  description: "\u9306\u3073\u305F\u9244\u306E\u5207\u308C\u7AEF\u3002\u5F3E\u306E\u6750\u6599\u3084\u6B66\u5668\u306E\u5F37\u5316\u306B\u4F7F\u3046\u3002"
   category: 2
   weight: 1
   heal: 0

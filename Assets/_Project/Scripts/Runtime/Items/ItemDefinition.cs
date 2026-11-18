@@ -9,6 +9,7 @@ namespace Matoi.Items
         Ammo,         // 使うと弾が増える
         Material,     // 素材（将来のクラフト用）
         Valuable,     // 換金品・収集品
+        Key,          // ミッションで使う大切な物（捨てられない）
     }
 
     /// <summary>

@@ -12,7 +12,8 @@ namespace Matoi.Items
         [Tooltip("調べる位置の高さ (m)")]
         [SerializeField] float pointHeight = 0.6f;
 
-        public bool Searched { get; private set; }
+        /// <summary>調べ終わったか（セーブデータからも戻す）。</summary>
+        public bool Searched { get; set; }
         public override bool CanInteract => !Searched;
         public override string Verb => "物色する";
         public override string Label => label;

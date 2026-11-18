@@ -28,6 +28,15 @@ namespace Matoi.Player
 
         public bool IsDead => health.IsDead;
         public int DeathCount { get; private set; }
+        public Vector3 RespawnPosition => spawnPos;
+        public float RespawnYaw => spawnYaw;
+
+        /// <summary>復活する場所を変える（寝床で休んだ時）。</summary>
+        public void SetRespawnPoint(Vector3 position, float yaw)
+        {
+            spawnPos = position;
+            spawnYaw = yaw;
+        }
 
         void Awake()
         {

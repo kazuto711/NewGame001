@@ -16,12 +16,14 @@ namespace Matoi.AI
     [RequireComponent(typeof(CharacterMotor), typeof(Health))]
     public class EnemyBrain : MonoBehaviour
     {
-        public enum State { Idle, Chase, Windup, Attack, Stagger, Return, Dead, Search }
+        public enum State { Idle, Chase, Windup, Attack, Stagger, Return, Dead, Search, RangedWindup }
 
         [SerializeField] EnemyDefinition definition;
 
         static readonly List<EnemyBrain> all = new List<EnemyBrain>();
         public static IReadOnlyList<EnemyBrain> All => all;
+        /// <summary>どれかの敵が倒された時（ミッションの進行に使う）。</summary>
+        public static event System.Action<EnemyBrain> AnyDefeated;
 
         CharacterMotor motor;
         MeleeAttack melee;
@@ -37,6 +39,11 @@ namespace Matoi.AI
         NavMeshPath path;
         readonly List<Vector3> corners = new List<Vector3>();
         int cornerIndex;
+        EnemyProjectile chargingShot;
+        float nextRangedAttack;
+
+        /// <summary>弾を放った回数（テスト・調整用）</summary>
+        public int ShotsFired { get; private set; }
 
         /// <summary>倒された後に持ち場で復活するか（ウェーブで出した敵は復活しない）</summary>
         public bool RespawnEnabled { get; set; } = true;
@@ -68,11 +75,25 @@ namespace Matoi.AI
         /// <summary>音を聞く。届く距離なら、音のした場所を調べに行く。</summary>
         public void HearNoise(Vector3 position, float radius)
         {
-            if (aggro || Current == State.Dead || radius <= 0f) return;
+            if (aggro || Current == State.Dead || radius <= 0f || BlockedByBase(position)) return;
             if (Flat(position - transform.position).magnitude > radius) return;
             searchPoint = position;
             Awareness = Mathf.Max(Awareness, SuspiciousAt);
             Enter(State.Search);
+        }
+
+        /// <summary>拠点の中には踏み込まない（戦闘テストのウェーブで出した敵だけは例外）。</summary>
+        bool BlockedByBase(Vector3 position) => RespawnEnabled && Matoi.Crafting.BaseZone.Contains(position);
+
+        /// <summary>倒された時に物を落とす。</summary>
+        void DropLoot()
+        {
+            if (!definition || !definition.drops) return;
+            foreach (var stack in definition.drops.Roll())
+            {
+                Vector2 offset = Random.insideUnitCircle * 0.6f;
+                Matoi.Items.WorldPickup.Spawn(stack.item, stack.count, transform.position + new Vector3(offset.x, 0.6f, offset.y));
+            }
         }
 
         /// <summary>気づいていない敵への、しゃがんだプレイヤーの攻撃は倍率が掛かる。</summary>
@@ -85,6 +106,7 @@ namespace Matoi.AI
                 info.amount *= multiplier;
                 stealth.NotifySneakAttack(multiplier);
             }
+            if (!info.isMelee && definition) info.amount *= definition.gunDamageScale;   // 硬い敵は銃が効きにくい
             return info;
         }
 
@@ -102,11 +124,15 @@ namespace Matoi.AI
             {
                 if (definition.aggroOnDamage && info.source && !Health.AreAllies(gameObject, info.source)) aggro = true;
             };
-            health.OnDied += _ => { Enter(State.Dead); deathTime = Time.time; };
+            health.OnDied += _ => { Enter(State.Dead); deathTime = Time.time; DropLoot(); AnyDefeated?.Invoke(this); };
         }
 
         void OnEnable() => all.Add(this);
-        void OnDisable() => all.Remove(this);
+        void OnDisable()
+        {
+            all.Remove(this);
+            CancelCharge();
+        }
 
         void Start()
         {
@@ -126,6 +152,8 @@ namespace Matoi.AI
                 melee.damage = definition.attackDamage;
                 melee.knockback = definition.attackKnockback;
                 melee.lunge = definition.attackLunge;
+                melee.reach = definition.attackReach;
+                melee.radius = definition.attackRadius;
                 melee.hitStop = 0.04f;
                 melee.shake = 0.25f;
             }
@@ -142,6 +170,7 @@ namespace Matoi.AI
 
         void Update()
         {
+            if (chargingShot && Current != State.RangedWindup) CancelCharge();   // ひるむ・倒されると弾は消える
             if (Current == State.Dead)
             {
                 motor.SetIntent(MoveIntent.None);
@@ -194,7 +223,8 @@ namespace Matoi.AI
                     break;
 
                 case State.Chase:
-                    if (!targetAlive || dist > definition.loseRange) { aggro = false; Awareness = 0f; Enter(State.Return); break; }
+                    if (!targetAlive || dist > definition.loseRange || BlockedByBase(target.position) || BlockedByBase(transform.position))
+                    { aggro = false; Awareness = 0f; Enter(State.Return); break; }
                     // しゃがんで物陰に隠れ続けると、見失ってあきらめる
                     var sneaker = Matoi.Player.PlayerStealth.Instance;
                     if (sneaker && sneaker.IsSneaking && !CanSeeTarget() && dist > definition.hearRange)
@@ -221,7 +251,15 @@ namespace Matoi.AI
                         motor.AddImpulse(-dirToTarget * 1.2f); // 少し身を引く＝攻撃の合図
                         break;
                     }
+                    if (definition.ranged && dist > definition.attackRange) { UpdateRanged(dist, dirToTarget); break; }
                     MoveTowards(target.position, dist > definition.sprintDistance);
+                    break;
+
+                case State.RangedWindup:
+                    motor.SetIntent(new MoveIntent { facing = dirToTarget });
+                    if (!targetAlive) { CancelCharge(); Enter(State.Chase); break; }
+                    if (chargingShot) chargingShot.HoldAt(MouthPosition);
+                    if (StateTime >= definition.rangedWindup) ReleaseShot();
                     break;
 
                 case State.Windup:
@@ -242,8 +280,57 @@ namespace Matoi.AI
             }
         }
 
+        // ---------- 遠距離攻撃 ----------
+        Vector3 MouthPosition => transform.position + Vector3.up * definition.projectileHeight + transform.forward * 0.45f;
+
+        /// <summary>距離を保ちながら、見えていれば弾を吐く。</summary>
+        void UpdateRanged(float dist, Vector3 dirToTarget)
+        {
+            bool sees = CanSeeTarget();
+            if (sees && dist <= definition.rangedRange && Time.time >= nextRangedAttack)
+            {
+                Enter(State.RangedWindup);
+                WindupCount++;
+                chargingShot = EnemyProjectile.BeginCharge(gameObject, definition, MouthPosition);
+                if (characterAnimator) characterAnimator.PlayAction("EnemyAttack", definition.rangedWindup + 0.35f);
+                motor.SetIntent(new MoveIntent { facing = dirToTarget });
+            }
+            else if (dist < definition.rangedMinDistance)
+                motor.SetIntent(new MoveIntent { direction = -dirToTarget, facing = dirToTarget });
+            else if (!sees || dist > definition.rangedPreferredDistance)
+                MoveTowards(target.position, false);
+            else
+                motor.SetIntent(new MoveIntent { facing = dirToTarget });
+        }
+
+        void ReleaseShot()
+        {
+            if (chargingShot)
+            {
+                // 動いている相手の少し先を狙う（向きを変えれば避けられる）
+                Vector3 aim = target.position + Vector3.up * 1.1f;
+                if (target.TryGetComponent<CharacterMotor>(out var targetMotor))
+                {
+                    float flight = Vector3.Distance(MouthPosition, aim) / Mathf.Max(1f, definition.projectileSpeed);
+                    aim += Flat(targetMotor.Velocity) * (flight * 0.5f);
+                }
+                chargingShot.Launch(aim);
+                chargingShot = null;
+                ShotsFired++;
+            }
+            nextRangedAttack = Time.time + definition.rangedCooldown;
+            Enter(State.Chase);
+        }
+
+        void CancelCharge()
+        {
+            if (chargingShot) Destroy(chargingShot.gameObject);
+            chargingShot = null;
+        }
+
         bool Notices(float dist)
         {
+            if (BlockedByBase(target.position) || BlockedByBase(transform.position)) { Awareness = 0f; return false; }
             var stealth = Matoi.Player.PlayerStealth.Instance;
             if (stealth && stealth.IsSneaking) return NoticesSneakingPlayer(stealth, dist);
             Awareness = Mathf.MoveTowards(Awareness, 0f, Time.deltaTime / definition.awarenessDecayTime);

@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98df66d7f6db34d409e96306d717d3bb, type: 3}
+  m_Name: Enemy_Boss
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.AI.EnemyDefinition
+  displayName: "\u793E\u306E\u4E3B"
+  maxHealth: 90
+  movement: {fileID: 11400000, guid: 5a8a4619c38502947adbf61c579df1c3, type: 2}
+  detectRange: 13
+  hearRange: 4
+  loseRange: 28
+  aggroOnDamage: 1
+  sneakFieldOfView: 110
+  sneakSightScale: 0.7
+  sneakDetectTime: 0.8
+  awarenessDecayTime: 4
+  searchTime: 3
+  giveUpTime: 4
+  sprintDistance: 7
+  attackRange: 1.7
+  windupTime: 0.45
+  attackCooldown: 1.1
+  attackDamage: 15
+  attackKnockback: 4
+  attackLunge: 3
+  attackReach: 1
+  attackRadius: 0.75
+  ranged: 0
+  rangedRange: 13
+  rangedPreferredDistance: 9
+  rangedMinDistance: 5
+  rangedWindup: 0.7
+  rangedCooldown: 2.6
+  projectileDamage: 12
+  projectileSpeed: 13
+  projectileHeight: 1.5
+  projectileMaterial: {fileID: 0}
+  projectileColor: {r: 0.5, g: 1, b: 0.25, a: 1}
+  gunDamageScale: 1
+  staggerTime: 0.35
+  staggerCooldown: 0.8
+  knockbackScale: 1
+  drops: {fileID: 0}
+  respawnDelay: 8

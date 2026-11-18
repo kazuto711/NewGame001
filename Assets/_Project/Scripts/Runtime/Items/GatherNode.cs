@@ -19,6 +19,12 @@ namespace Matoi.Items
 
         public override bool CanInteract => Time.time >= readyAt;
         public bool IsDepleted => !CanInteract;
+        /// <summary>元に戻るまでの残り秒数（セーブ用）。</summary>
+        public float RemainingRespawn
+        {
+            get => Mathf.Max(0f, readyAt - Time.time);
+            set => readyAt = Time.time + Mathf.Max(0f, value);
+        }
         public override string Verb => "採集する";
         public override string Label => label;
         public override float HoldTime => holdTime;

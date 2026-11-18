@@ -36,7 +36,7 @@ namespace Matoi.DebugTools
 
         public void SwapProfile()
         {
-            if (profiles == null || profiles.Length == 0) return;
+            if (!Debug.isDebugBuild || profiles == null || profiles.Length == 0) return;
             index = (index + 1) % profiles.Length;
             motor.SetProfile(profiles[index]);
             Matoi.CameraSystem.CameraShake.Shake(0.6f); // 切り替えの手応え（画面揺れの動作確認も兼ねる）
@@ -44,7 +44,7 @@ namespace Matoi.DebugTools
 
         void OnGUI()
         {
-            if (!showHud || motor == null || motor.Profile == null) return;
+            if (!showHud || !Matoi.Missions.GameFlow.ShowDevInfo || motor == null || motor.Profile == null) return;
             style ??= new GUIStyle(GUI.skin.label) { fontSize = 18, normal = { textColor = Color.white } };
             var p = motor.Profile;
             string text =

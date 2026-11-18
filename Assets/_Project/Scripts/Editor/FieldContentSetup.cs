@@ -4,7 +4,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Matoi.Combat;
+using Matoi.Crafting;
 using Matoi.Items;
+using Matoi.Missions;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +16,8 @@ namespace Matoi.EditorTools
     {
         const string DataDir = "Assets/_Project/Data/Items";
         const string PropDir = "Assets/_Project/Art/Environment/Props";
+        const string CraftDir = "Assets/_Project/Data/Crafting";
+        const string CatalogPath = CraftDir + "/GameCatalog.asset";
 
         static readonly Dictionary<string, ItemDefinition> items = new Dictionary<string, ItemDefinition>();
         static readonly Dictionary<string, LootTable> tables = new Dictionary<string, LootTable>();
@@ -59,9 +63,84 @@ namespace Matoi.EditorTools
             tables[id] = table;
         }
 
+        // ---------- クラフト ----------
+        static T LoadOrCreate<T>(string path) where T : ScriptableObject
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset) return asset;
+            asset = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            return asset;
+        }
+
+        static ItemAmount[] Cost(params (string item, int count)[] rows) =>
+            rows.Select(r => new ItemAmount(items[r.item], r.count)).ToArray();
+
+        static RecipeDefinition Recipe(string id, string result, int count, params (string item, int count)[] rows)
+        {
+            var recipe = LoadOrCreate<RecipeDefinition>($"{CraftDir}/Recipe_{id}.asset");
+            recipe.result = items[result];
+            recipe.resultCount = count;
+            recipe.ingredients = Cost(rows);
+            EditorUtility.SetDirty(recipe);
+            return recipe;
+        }
+
+        static WeaponUpgradeDefinition Upgrade(string id, UpgradeKind kind, string label, string text, params float[] bonuses)
+        {
+            var upgrade = LoadOrCreate<WeaponUpgradeDefinition>($"{CraftDir}/Upgrade_{id}.asset");
+            upgrade.kind = kind;
+            upgrade.displayName = label;
+            upgrade.description = text;
+            upgrade.levels = new[]
+            {
+                new WeaponUpgradeDefinition.Level { bonus = bonuses[0], cost = Cost(("Scrap", 4), ("Wood", 2)) },
+                new WeaponUpgradeDefinition.Level { bonus = bonuses[1], cost = Cost(("Scrap", 6), ("Parts", 2)) },
+                new WeaponUpgradeDefinition.Level { bonus = bonuses[2], cost = Cost(("Scrap", 8), ("Parts", 5)) },
+            };
+            EditorUtility.SetDirty(upgrade);
+            return upgrade;
+        }
+
+        /// <summary>全データの一覧を返す。まだ無ければ作る。</summary>
+        public static GameCatalog LoadCatalog()
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(CatalogPath);
+            if (catalog) return catalog;
+            CreateData();
+            return AssetDatabase.LoadAssetAtPath<GameCatalog>(CatalogPath);
+        }
+
+        static void CreateCrafting(WeaponDefinition pistol, WeaponDefinition rifle)
+        {
+            if (!AssetDatabase.IsValidFolder(CraftDir)) AssetDatabase.CreateFolder("Assets/_Project/Data", "Crafting");
+            var recipes = new[]
+            {
+                Recipe("Bandage", "Bandage", 2, ("Cloth", 2), ("Herb", 1)),
+                Recipe("Medkit", "Medkit", 1, ("Bandage", 3), ("Herb", 4)),
+                Recipe("PistolAmmo", "PistolAmmo", 1, ("Scrap", 2)),
+                Recipe("RifleAmmo", "RifleAmmo", 1, ("Scrap", 3), ("Parts", 1)),
+                Recipe("Radio", "Radio", 1, ("RadioPart", 3)),
+            };
+            var upgrades = new[]
+            {
+                Upgrade("Damage", UpgradeKind.Damage, "威力", "1 発のダメージが上がる。", 0.10f, 0.20f, 0.30f),
+                Upgrade("Magazine", UpgradeKind.Magazine, "装弾数", "弾倉に入る弾が増える。次のリロードから反映される。", 0.20f, 0.40f, 0.60f),
+                Upgrade("Stability", UpgradeKind.Stability, "安定性", "弾のばらつきと反動が小さくなる。", 0.15f, 0.30f, 0.45f),
+            };
+            var catalog = LoadOrCreate<GameCatalog>(CatalogPath);
+            catalog.items = items.Values.ToArray();
+            catalog.recipes = recipes;
+            catalog.upgrades = upgrades;
+            catalog.weapons = new[] { pistol, rifle };
+            EditorUtility.SetDirty(catalog);
+            MissionSetup.CreateMission(catalog);
+        }
+
         public static void CreateData()
         {
             if (!AssetDatabase.IsValidFolder(DataDir)) AssetDatabase.CreateFolder("Assets/_Project/Data", "Items");
+            var pistol = AssetDatabase.LoadAssetAtPath<WeaponDefinition>("Assets/_Project/Data/Weapons/Weapon_Pistol.asset");
             var rifle = AssetDatabase.LoadAssetAtPath<WeaponDefinition>("Assets/_Project/Data/Weapons/Weapon_AK47.asset");
 
             Item("Bandage", "包帯", "清潔な布の包帯。傷口を押さえれば、まだ動ける。", ItemCategory.Consumable, 0.2f, "Item_Bandage", heal: 25f);
@@ -69,19 +148,26 @@ namespace Matoi.EditorTools
             Item("Can", "缶詰", "賞味期限は読めないが、開ければ食べられる。", ItemCategory.Consumable, 0.5f, "Item_Can", heal: 15f);
             Item("Water", "飲料水", "封の切られていない水。少しだけ体力が戻る。", ItemCategory.Consumable, 0.5f, "Item_Bottle", heal: 8f);
             Item("RifleAmmo", "小銃弾（30 発）", "AK47 に使える弾の箱。使うと予備の弾が 30 発増える。", ItemCategory.Ammo, 0.6f, "Item_Ammo", ammoFor: rifle, ammo: 30);
-            Item("Herb", "薬草", "畦に生える薬草。今は素材として取っておく。", ItemCategory.Material, 0.1f, "Item_Herb");
-            Item("Wood", "木材", "まだ使える板切れ。", ItemCategory.Material, 1f, "Item_Wood");
-            Item("Scrap", "鉄くず", "錆びた鉄の切れ端。", ItemCategory.Material, 1f, "Item_Scrap");
-            Item("Cloth", "布切れ", "破れた衣類。", ItemCategory.Material, 0.2f, "Item_Cloth");
-            Item("Parts", "機械部品", "歯車や銅線。纏の修理に役立ちそうだ。", ItemCategory.Material, 0.5f, "Item_Parts");
+            Item("PistolAmmo", "拳銃弾（24 発）", "拳銃に使える弾の箱。使うと予備の弾が 24 発増える。", ItemCategory.Ammo, 0.4f, "Item_Ammo", ammoFor: pistol, ammo: 24);
+            Item("Herb", "薬草", "畦に生える薬草。包帯や救急箱の材料になる。", ItemCategory.Material, 0.1f, "Item_Herb");
+            Item("Wood", "木材", "まだ使える板切れ。武器の強化に使う。", ItemCategory.Material, 1f, "Item_Wood");
+            Item("Scrap", "鉄くず", "錆びた鉄の切れ端。弾の材料や武器の強化に使う。", ItemCategory.Material, 1f, "Item_Scrap");
+            Item("Cloth", "布切れ", "破れた衣類。包帯の材料になる。", ItemCategory.Material, 0.2f, "Item_Cloth");
+            Item("Parts", "機械部品", "歯車や銅線。小銃弾の材料や武器の強化に使う。", ItemCategory.Material, 0.5f, "Item_Parts");
             Item("Charm", "古いお守り", "色あせたお守り。誰かの無事を願ったものだろう。", ItemCategory.Valuable, 0.1f, "Item_Charm");
+            Item("RadioPart", "無線機の部品", "ミオの無線機を直すのに必要な部品。3 つ集めて作業台で組み立てる。", ItemCategory.Key, 0f, "Item_Parts");
+            Item("Radio", "修理した無線機", "社の方角の異変を拾った無線機。", ItemCategory.Key, 0f, "Item_Parts");
 
-            Table("Common", 0.15f, ("Can", 0.45f, 1, 1), ("Cloth", 0.5f, 1, 2), ("Wood", 0.3f, 1, 2), ("Bandage", 0.2f, 1, 1));
+            Table("Common", 0.15f, ("Can", 0.45f, 1, 1), ("Cloth", 0.5f, 1, 2), ("Wood", 0.3f, 1, 2), ("Bandage", 0.2f, 1, 1), ("PistolAmmo", 0.25f, 1, 1));
             Table("Vending", 0f, ("Water", 0.9f, 1, 2), ("Can", 0.4f, 1, 1));
-            Table("Car", 0.1f, ("Scrap", 0.6f, 1, 2), ("Parts", 0.45f, 1, 2), ("Bandage", 0.25f, 1, 1), ("RifleAmmo", 0.2f, 1, 1));
-            Table("Tools", 0f, ("Parts", 0.8f, 1, 3), ("Scrap", 0.6f, 1, 2), ("RifleAmmo", 0.25f, 1, 1));
-            Table("House", 0.05f, ("Can", 0.55f, 1, 2), ("Water", 0.4f, 1, 1), ("Bandage", 0.4f, 1, 2), ("Cloth", 0.6f, 1, 2), ("Charm", 0.12f, 1, 1));
-            Table("Rare", 0f, ("Medkit", 0.8f, 1, 1), ("RifleAmmo", 0.8f, 1, 2), ("Parts", 0.7f, 2, 3), ("Charm", 0.5f, 1, 1));
+            Table("Car", 0.1f, ("Scrap", 0.6f, 1, 2), ("Parts", 0.45f, 1, 2), ("Bandage", 0.25f, 1, 1), ("RifleAmmo", 0.2f, 1, 1), ("PistolAmmo", 0.3f, 1, 1));
+            Table("Tools", 0f, ("Parts", 0.8f, 1, 3), ("Scrap", 0.6f, 1, 2), ("RifleAmmo", 0.25f, 1, 1), ("PistolAmmo", 0.25f, 1, 1));
+            Table("House", 0.05f, ("Can", 0.55f, 1, 2), ("Water", 0.4f, 1, 1), ("Bandage", 0.4f, 1, 2), ("Cloth", 0.6f, 1, 2), ("Charm", 0.12f, 1, 1), ("PistolAmmo", 0.2f, 1, 1));
+            Table("Rare", 0f, ("Medkit", 0.8f, 1, 1), ("RifleAmmo", 0.8f, 1, 2), ("Parts", 0.7f, 2, 3), ("Charm", 0.5f, 1, 1), ("PistolAmmo", 0.5f, 1, 2));
+            // 敵が落とす物：採集できない布切れと機械部品が、取り尽くしても手に入るように
+            Table("EnemyDrop", 0.45f, ("Cloth", 0.5f, 1, 1), ("Parts", 0.3f, 1, 1), ("PistolAmmo", 0.12f, 1, 1));
+            Table("EliteDrop", 0f, ("Parts", 0.8f, 1, 2), ("Scrap", 0.6f, 1, 2), ("PistolAmmo", 0.35f, 1, 1), ("RifleAmmo", 0.25f, 1, 1));   // 重殻体が落とす物
+            CreateCrafting(pistol, rifle);
             AssetDatabase.SaveAssets();
         }
 
@@ -188,13 +274,146 @@ namespace Matoi.EditorTools
 
             ClearVegetationInside("House_27_5", 2.9f, 2.6f);
             ClearVegetationInside("House_14_-2", 5.4f, 4.0f);
+            ClearVegetationInside("House_25_-14", 4.2f, 6.5f);   // 拠点の納屋と、前の焚き火のまわり
+            ClearVegetationOnHill();
             PlaceDecor();
             PlaceBuildingInteriors();
+            PlaceBase();
             Physics.SyncTransforms();
             PlacePickups();
             PlaceNodes();
             PlaceContainers();
             PlacePoints();
+            PlaceMission();
+            AssignSaveIds();
+        }
+
+        /// <summary>広げた高台に埋まった草や岩を取り除く。</summary>
+        static void ClearVegetationOnHill()
+        {
+            var plants = GameObject.Find("Vegetation")?.transform;
+            if (!plants) return;
+            foreach (Transform group in plants)
+                foreach (Transform plant in group.Cast<Transform>().ToArray())
+                {
+                    Vector3 d = plant.position - MissionSetup.ArenaCenter;
+                    if (Mathf.Abs(d.x) < 12.5f && Mathf.Abs(d.z) < 9.5f) Object.DestroyImmediate(plant.gameObject);
+                }
+        }
+
+        // ---------- 第一話の目印・部品・灯籠 ----------
+        static GameObject Mark(string group, Vector3 position)
+        {
+            var go = new GameObject("Marker_" + group);
+            go.transform.SetParent(root, false);
+            go.transform.position = position;
+            go.AddComponent<MissionMarker>().Configure(group);
+            return go;
+        }
+
+        static GameObject Mark(string group, float x, float z) => Mark(group, new Vector3(x, GroundY(x, z), z));
+
+        static void RadioPart(Vector3 position)
+        {
+            var def = items["RadioPart"];
+            var holder = Mark("radio_part", position);
+            holder.name = "Pickup_RadioPart";
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(def.worldModel, holder.transform);
+            model.transform.localPosition = Vector3.zero;
+            holder.AddComponent<WorldPickup>().Configure(def, 1);
+        }
+
+        static void PlaceMission()
+        {
+            Mark("start_ammo", 4.1f, -18.6f);
+            Mark("first_enemy", 1.5f, -29f);
+            Mark("base", 25f, -14f);
+            Mark("shrine", MissionSetup.ArenaCenter);
+
+            var stations = root.GetComponentsInChildren<BaseStation>();
+            Vector3 bed = stations.First(s => s.StationKind == BaseStation.Kind.Bed).transform.position;
+            Vector3 bench = stations.First(s => s.StationKind == BaseStation.Kind.Workbench).transform.position;
+            Mark("bed", bed);
+            Mark("bench", bench);
+            Mark("craft", bench);
+            Mark("craft", 10.2f, 6.3f);    // 布切れ
+            Mark("craft", 32f, -12f);      // 薬草
+
+            // 無線機の部品（バス・工事現場・蔵）と、それを守る敵の出現場所
+            RadioPart(new Vector3(-10.5f, GroundY(-10.5f, 31f) + 0.01f, 31f));
+            RadioPart(new Vector3(14.5f, GroundY(14.5f, -33.5f) + 0.01f, -33.5f));
+            var kura = GameObject.Find("House_27_5")?.transform;
+            if (kura) RadioPart(InHouse(kura, 0.3f, -0.3f, 0.52f));
+            Mark("guard_bus", -9f, 29f);
+            Mark("guard_site_a", 12.5f, -31f);
+            Mark("guard_site_b", 17f, -35.5f);
+            Mark("guard_kura", 31f, 10f);
+
+            // 社の灯籠（ボスを倒した後に火をともす）
+            var lamp = Ground("StoneLantern", 22f, 40.2f);
+            if (!lamp) return;
+            var flame = new GameObject("LampFlame").AddComponent<Light>();
+            flame.transform.SetParent(lamp.transform, false);
+            flame.transform.position = lamp.transform.position + Vector3.up * 1.5f;
+            flame.type = LightType.Point;
+            flame.color = new Color(1f, 0.68f, 0.32f);
+            flame.intensity = 8f;
+            flame.range = 14f;
+            flame.shadows = LightShadows.None;
+            flame.enabled = false;
+            lamp.AddComponent<MissionLamp>().Configure(flame);
+            Mark("lamp", lamp.transform.position);
+        }
+
+        /// <summary>セーブデータで見分けられるよう、拾う物・採集場所・入れ物に名前を付ける。</summary>
+        static void AssignSaveIds()
+        {
+            var used = new HashSet<string>();
+            foreach (var target in root.GetComponentsInChildren<Interactable>(true))
+            {
+                if (target is BaseStation) continue;
+                Vector3 p = target.transform.position;
+                string id = $"{target.GetType().Name}_{target.name}_{Mathf.RoundToInt(p.x * 10f)}_{Mathf.RoundToInt(p.z * 10f)}";
+                string unique = id;
+                for (int i = 2; !used.Add(unique); i++) unique = $"{id}_{i}";
+                target.SaveId = unique;
+                EditorUtility.SetDirty(target);
+            }
+        }
+
+        // ---------- 拠点（農家の納屋） ----------
+        static void Station(string model, BaseStation.Kind kind, string label, Vector3 position, float yaw, float height, Transform parent)
+        {
+            var go = Put(model, position, yaw, parent);
+            if (go) go.AddComponent<BaseStation>().Configure(kind, label, height);
+        }
+
+        static void PlaceBase()
+        {
+            var barn = GameObject.Find("House_25_-14")?.transform;
+            if (!barn) { Debug.LogError("[Matoi] 拠点にする納屋が見つかりません"); return; }
+            var group = new GameObject("Base").transform;
+            group.SetParent(root, false);
+            group.position = barn.position;
+            group.gameObject.AddComponent<BaseZone>().Configure(9f);
+
+            const float floor = 0.12f;
+            float yaw = FaceFront(barn);
+            Station("Workbench", BaseStation.Kind.Workbench, "作業台", InHouse(barn, 0f, -1.8f, floor), yaw + 180f, 0.9f, group);
+            Station("StorageChest", BaseStation.Kind.Storage, "保管箱", InHouse(barn, 2.8f, -0.1f, floor), yaw + 90f, 0.6f, group);
+            Station("Bedroll", BaseStation.Kind.Bed, "寝床", InHouse(barn, -2.55f, 0.75f, floor), yaw + 180f, 0.3f, group);
+
+            Vector3 fire = InHouse(barn, 0f, 4.7f, 0f);
+            var campfire = Put("Campfire", new Vector3(fire.x, GroundY(fire.x, fire.z), fire.z), yaw, group);
+            if (!campfire) return;
+            var glow = new GameObject("FireLight").AddComponent<Light>();
+            glow.transform.SetParent(campfire.transform, false);
+            glow.transform.position = campfire.transform.position + Vector3.up * 0.7f;
+            glow.type = LightType.Point;
+            glow.color = new Color(1f, 0.62f, 0.3f);
+            glow.intensity = 5f;
+            glow.range = 8f;
+            glow.shadows = LightShadows.None;
         }
 
         /// <summary>中に入れる建物の室内に生えてしまった草や岩を取り除く。</summary>
@@ -274,9 +493,8 @@ namespace Matoi.EditorTools
             if (barn)
             {
                 float yaw = FaceFront(barn);
-                var box = Put("ToolBox", InHouse(barn, 2.3f, 0.6f, 0.12f), yaw);
+                var box = Put("ToolBox", InHouse(barn, 2.75f, 1.5f, 0.12f), yaw);
                 if (box) box.AddComponent<LootContainer>().Configure("工具箱", tables["Tools"], 0.8f, 0.3f);
-                Put("Shelf", InHouse(barn, 0.2f, 1.75f, 0.12f), yaw + 180f);
             }
         }
 
@@ -292,11 +510,13 @@ namespace Matoi.EditorTools
             Pickup("Cloth", 2, 10.2f, 6.3f);
             Pickup("Parts", 1, -10.2f, 31.2f);
             Pickup("Scrap", 2, -7.4f, 28.3f);
-            Pickup("Charm", 1, 22f, 31.6f);
+            Pickup("Charm", 1, 15.5f, 42.5f);
             Pickup("Herb", 2, -6.6f, 18.2f);
             Pickup("Can", 2, 30.2f, -7.6f);
             Pickup("Water", 1, 32f, -1.8f);
             Pickup("Medkit", 1, 19.3f, -33.6f);
+            Pickup("PistolAmmo", 1, 4.1f, -18.6f);
+            Pickup("PistolAmmo", 1, 8.2f, 4.6f);
         }
 
         static void PlaceNodes()
@@ -315,7 +535,7 @@ namespace Matoi.EditorTools
             Container("Crate", "木箱", "Common", 20.6f, -8.6f, -24f);
             Container("Crate", "木箱", "Common", 33f, 2.6f, 40f);
             Container("Crate", "木箱", "Common", -8f, 33.4f, 8f);
-            Container("Crate", "奉納箱", "Rare", 22f, 33.6f, 0f);
+            Container("Crate", "奉納箱", "Rare", 28.5f, 42.5f, 0f);
             Container("Crate", "供え物の箱", "House", -35f, 6.2f, 90f);
             Container("Crate", "井戸端の箱", "Common", 31.3f, -5.4f, 30f);
             Container("Crate", "森の祠の箱", "Rare", 33.2f, 32.4f, 20f);

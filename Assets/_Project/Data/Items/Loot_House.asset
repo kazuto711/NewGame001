@@ -33,4 +33,8 @@ MonoBehaviour:
     chance: 0.12
     min: 1
     max: 1
+  - item: {fileID: 11400000, guid: a19a18ab9892439428c30c3079720308, type: 2}
+    chance: 0.2
+    min: 1
+    max: 1
   emptyChance: 0.05
