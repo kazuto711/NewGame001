@@ -23,6 +23,14 @@ namespace Matoi.InputHandling
         public event Action<int> WeaponSlotPressed;
         public event Action DodgePressed;
         public event Action InteractPressed;
+        public event Action SwitchShoulderPressed;
+        public event Action ToggleCameraModePressed;
+
+        InputAction look, lookDelta;
+        /// <summary>カメラを回す右スティック（-1〜1）。</summary>
+        public Vector2 LookStick => look != null ? look.ReadValue<Vector2>() : Vector2.zero;
+        /// <summary>このフレームのマウスの移動量（ピクセル）。</summary>
+        public Vector2 LookMouseDelta => lookDelta != null ? lookDelta.ReadValue<Vector2>() : Vector2.zero;
         public event Action DebugWavesPressed;
 
         public Vector2 Move => move != null ? move.ReadValue<Vector2>() : Vector2.zero;
@@ -74,6 +82,11 @@ namespace Matoi.InputHandling
             map.FindAction("Dodge", true).performed += c => { TrackDevice(c); DodgePressed?.Invoke(); };
             map.FindAction("DebugWaves", true).performed += c => DebugWavesPressed?.Invoke();
             map.FindAction("Interact", true).performed += c => { TrackDevice(c); InteractPressed?.Invoke(); };
+            look = map.FindAction("Look", true);
+            lookDelta = map.FindAction("LookDelta", true);
+            look.performed += TrackDevice;
+            map.FindAction("SwitchShoulder", true).performed += c => SwitchShoulderPressed?.Invoke();
+            map.FindAction("ToggleCameraMode", true).performed += c => ToggleCameraModePressed?.Invoke();
         }
 
         void OnEnable()

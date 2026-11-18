@@ -3,6 +3,7 @@
     "rootNamespace": "Matoi.Tests",
     "references": [
         "Matoi.Runtime",
+        "Unity.Cinemachine",
         "Unity.InputSystem",
         "Unity.InputSystem.TestFramework",
         "UnityEngine.TestRunner",

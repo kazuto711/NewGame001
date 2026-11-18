@@ -31,6 +31,8 @@ namespace Matoi.Tests
             SceneManager.LoadScene("TestField");
             yield return null;
             yield return null;
+            // このテストは見下ろし視点を前提にしている（三人称視点は ThirdPersonCameraTests で確認）
+            Object.FindAnyObjectByType<Matoi.CameraSystem.CameraModeSwitcher>()?.SetMode(Matoi.CameraSystem.CameraMode.TopDown);
             player = GameObject.FindWithTag("Player");
             motor = player.GetComponent<CharacterMotor>();
             health = player.GetComponent<Health>();

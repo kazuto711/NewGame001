@@ -19,6 +19,12 @@ namespace Matoi.CameraSystem
 
         public Transform Target { get => target; set => target = value; }
 
+        // 無効にされた時（三人称視点に切り替えた時など）は、隠していた物を全て戻す
+        void OnDisable()
+        {
+            foreach (var occ in CameraOccluder.All) occ.SetHidden(false);
+        }
+
         void LateUpdate()
         {
             if (!target) return;

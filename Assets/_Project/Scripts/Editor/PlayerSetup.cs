@@ -40,7 +40,7 @@ namespace Matoi.EditorTools
             var armor = CreatePowerArmorProfile();
             var prefab = CreatePlayerPrefab(human, armor);
 
-            foreach (var name in new[] { "PlayerPlaceholder", "Player", "CM PlayerCamera" })
+            foreach (var name in new[] { "PlayerPlaceholder", "Player", "CM PlayerCamera", "CameraRoot", "CM Explore", "CM Aim", "CameraModeSwitcher" })
             {
                 var old = GameObject.Find(name);
                 if (old) Object.DestroyImmediate(old);
@@ -494,6 +494,73 @@ namespace Matoi.EditorTools
             var hider = mainCam.GetComponent<OcclusionHider>();
             if (!hider) hider = mainCam.gameObject.AddComponent<OcclusionHider>();
             hider.Target = target;
+
+            // 三人称視点（見下ろしと切り替えて比較できるよう、両方を置く）
+            SetupThirdPersonCamera(target, mainCam, cm, hider);
+        }
+
+        /// <summary>
+        /// 三人称視点のカメラ一式：回転の中心（CameraRoot）・探索用（背後）・構え用（肩越し）・視点の切り替え役。
+        /// </summary>
+        static void SetupThirdPersonCamera(Transform target, Camera mainCam, CinemachineCamera topDown, OcclusionHider hider)
+        {
+            var brain = mainCam.GetComponent<CinemachineBrain>();
+            brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, 0.35f);
+
+            var rootGo = new GameObject("CameraRoot");
+            rootGo.transform.SetPositionAndRotation(target.position + Vector3.up * 1.55f, target.rotation);
+
+            CinemachineCamera MakeCam(string name, float fov, Vector3 shoulder, float arm, float distance, Vector3 damping,
+                out CinemachineThirdPersonFollow follow)
+            {
+                var go = new GameObject(name);
+                go.transform.SetPositionAndRotation(rootGo.transform.position - rootGo.transform.forward * distance, rootGo.transform.rotation);
+                var cam = go.AddComponent<CinemachineCamera>();
+                cam.Follow = rootGo.transform;
+                cam.Priority = 0;
+                var l = cam.Lens;
+                l.FieldOfView = fov;
+                l.NearClipPlane = 0.1f;
+                l.FarClipPlane = 600f;
+                cam.Lens = l;
+                follow = go.AddComponent<CinemachineThirdPersonFollow>();
+                follow.ShoulderOffset = shoulder;
+                follow.VerticalArmLength = arm;
+                follow.CameraDistance = distance;
+                follow.CameraSide = 1f;
+                follow.Damping = damping;
+                // 壁よけ：カメラと主人公の間に物があれば手前に寄る（主人公自身は無視）
+                var avoid = follow.AvoidObstacles;
+                avoid.Enabled = true;
+                avoid.IgnoreTag = "Player";
+                avoid.CollisionFilter = ~(1 << 2); // Ignore Raycast レイヤー以外
+                avoid.CameraRadius = 0.25f;
+                avoid.DampingIntoCollision = 0.05f;
+                avoid.DampingFromCollision = 0.4f;
+                follow.AvoidObstacles = avoid;
+                go.AddComponent<CinemachineImpulseListener>(); // 画面揺れはどの視点でも効く
+                return cam;
+            }
+
+            var explore = MakeCam("CM Explore", 55f, new Vector3(0.45f, 0.15f, 0f), 0.25f, 3.8f,
+                new Vector3(0.15f, 0.25f, 0.3f), out var exploreFollow);
+            var aim = MakeCam("CM Aim", 42f, new Vector3(0.75f, 0.05f, 0f), 0.1f, 1.6f,
+                new Vector3(0.05f, 0.1f, 0.15f), out var aimFollow);
+
+            var tpc = rootGo.AddComponent<ThirdPersonCameraController>();
+            SetField(tpc, "target", target);
+            SetField(tpc, "input", target.GetComponent<PlayerInputReader>());
+            SetField(tpc, "motor", target.GetComponent<CharacterMotor>());
+            SetField(tpc, "exploreCamera", explore);
+            SetField(tpc, "aimCamera", aim);
+            SetField(tpc, "exploreFollow", exploreFollow);
+            SetField(tpc, "aimFollow", aimFollow);
+
+            var switcher = new GameObject("CameraModeSwitcher").AddComponent<CameraModeSwitcher>();
+            SetField(switcher, "topDownCamera", topDown);
+            SetField(switcher, "thirdPerson", tpc);
+            SetField(switcher, "occlusionHider", hider);
+            SetField(switcher, "input", target.GetComponent<PlayerInputReader>());
         }
 
         // ---------- ヘルパー ----------

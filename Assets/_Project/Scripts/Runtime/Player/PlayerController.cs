@@ -137,18 +137,32 @@ namespace Matoi.Player
             }
 
             // ---- 狙い ----
-            Vector2 aimStick = input.AimStick;
-            bool stickAim = aimStick.magnitude > aimStickDeadzone;
             bool fireHeld = input.FireHeld;
-            // 撃つボタンだけ押しても、今の向き（直前の狙い）へ構えて撃てる
-            bool aiming = stickAim || input.AimHeld || fireHeld;
-            if (fireHeld && !stickAim && !input.AimHeld && weapons && !weapons.IsAiming) aimDir = transform.forward;
-            if (stickAim) aimDir = ToWorld(aimStick).normalized;
-            else if (aiming && !input.UsingGamepad && TryMouseAim(out var mouseDir)) aimDir = mouseDir;
+            bool aiming;
+            var tp = ThirdPerson;
+            if (tp != null)
+            {
+                // 三人称：右スティック／マウスはカメラを回す。構えは LT / 右クリック（撃つボタンでも構える）
+                // 狙う方向は（仮に）カメラの正面。照準・射線の本格対応は次の段階で行う
+                aiming = input.AimHeld || fireHeld;
+                if (aiming) aimDir = tp.FlatForward;
+            }
+            else
+            {
+                // 見下ろし：右スティック＝狙う方向、マウス＝照準カーソル（従来どおり）
+                Vector2 aimStick = input.AimStick;
+                bool stickAim = aimStick.magnitude > aimStickDeadzone;
+                // 撃つボタンだけ押しても、今の向き（直前の狙い）へ構えて撃てる
+                aiming = stickAim || input.AimHeld || fireHeld;
+                if (fireHeld && !stickAim && !input.AimHeld && weapons && !weapons.IsAiming) aimDir = transform.forward;
+                if (stickAim) aimDir = ToWorld(aimStick).normalized;
+                else if (aiming && !input.UsingGamepad && TryMouseAim(out var mouseDir)) aimDir = mouseDir;
+            }
 
             if (aiming && weapons && !weapons.IsDrawn) weapons.SetDrawn(true); // 構えたら自動で武器を抜く
             bool armedAim = aiming && weapons && weapons.IsDrawn;
             if (weapons) weapons.SetAim(armedAim, aimDir);
+            if (tp != null) tp.AimMode = armedAim;
             if (shooter) shooter.SetTrigger(armedAim && fireHeld);
 
             // ---- 移動 ----
@@ -185,11 +199,24 @@ namespace Matoi.Player
             motor.SetIntent(intent);
         }
 
+        /// <summary>今が三人称視点なら、そのカメラ。見下ろし視点なら null。</summary>
+        static CameraSystem.ThirdPersonCameraController ThirdPerson =>
+            CameraSystem.CameraModeSwitcher.Mode == CameraSystem.CameraMode.ThirdPerson
+            && CameraSystem.ThirdPersonCameraController.Instance != null
+            && CameraSystem.ThirdPersonCameraController.Instance.IsActive
+                ? CameraSystem.ThirdPersonCameraController.Instance : null;
+
         /// <summary>スティックの上 ＝ 画面の奥、になるよう、カメラの水平の向きで回転させる。</summary>
         Vector3 ToWorld(Vector2 stick)
         {
-            Transform cam = CameraTransform;
-            float yaw = cam != null ? cam.eulerAngles.y : 0f;
+            float yaw;
+            var tp = ThirdPerson;
+            if (tp != null) yaw = tp.Yaw;   // 三人称：カメラの回転の中心の向き（カメラの追従の遅れに影響されない）
+            else
+            {
+                Transform cam = CameraTransform;
+                yaw = cam != null ? cam.eulerAngles.y : 0f;
+            }
             return Quaternion.Euler(0f, yaw, 0f) * new Vector3(stick.x, 0f, stick.y);
         }
 

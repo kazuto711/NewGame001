@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Damage_Volume
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
-  - {fileID: 3874297606869688260}
---- !u!114 &3874297606869688260
+  - {fileID: 3477470607140704652}
+--- !u!114 &3477470607140704652
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}

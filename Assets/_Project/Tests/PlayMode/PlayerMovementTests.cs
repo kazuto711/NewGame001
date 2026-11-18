@@ -24,10 +24,12 @@ namespace Matoi.Tests
             SceneManager.LoadScene("TestField");
             yield return null;
             yield return null;
+            // このテストは見下ろし視点を前提にしている（三人称視点は ThirdPersonCameraTests で確認）
+            Object.FindAnyObjectByType<Matoi.CameraSystem.CameraModeSwitcher>()?.SetMode(Matoi.CameraSystem.CameraMode.TopDown);
             var player = GameObject.FindWithTag("Player");
             Assert.IsNotNull(player, "Player not found in TestField");
             motor = player.GetComponent<CharacterMotor>();
-            yield return new WaitForSeconds(0.3f); // 着地を待つ
+            yield return new WaitForSeconds(0.6f); // 着地と、視点切り替えのカメラ移行（0.35 秒）を待つ
         }
 
         static Vector3 CamForward => Quaternion.Euler(0, CamYaw, 0) * Vector3.forward;
