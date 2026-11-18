@@ -22,6 +22,8 @@ namespace Matoi.InputHandling
         /// <summary>数字キーで武器を直接選ぶ（0 始まり）</summary>
         public event Action<int> WeaponSlotPressed;
         public event Action DodgePressed;
+        public event Action JumpPressed;
+        public event Action CrouchPressed;
         public event Action InteractPressed;
         public event Action SwitchShoulderPressed;
         public event Action ToggleCameraModePressed;
@@ -36,6 +38,9 @@ namespace Matoi.InputHandling
         public Vector2 Move => move != null ? move.ReadValue<Vector2>() : Vector2.zero;
         public bool SprintHeld => sprintHold != null && sprintHold.IsPressed();
         public bool WalkHeld => walk != null && walk.IsPressed();
+        InputAction interact;
+        /// <summary>調べるボタンを押し続けている（採集・物色の長押し）。</summary>
+        public bool InteractHeld => interact != null && interact.IsPressed();
 
         /// <summary>右スティックの向き（ゲームパッド）。</summary>
         public Vector2 AimStick => aim != null ? aim.ReadValue<Vector2>() : Vector2.zero;
@@ -80,8 +85,11 @@ namespace Matoi.InputHandling
             weapon1.performed += c => { TrackDevice(c); WeaponSlotPressed?.Invoke(0); };
             weapon2.performed += c => { TrackDevice(c); WeaponSlotPressed?.Invoke(1); };
             map.FindAction("Dodge", true).performed += c => { TrackDevice(c); DodgePressed?.Invoke(); };
+            map.FindAction("Jump", true).performed += c => { TrackDevice(c); JumpPressed?.Invoke(); };
+            map.FindAction("Crouch", true).performed += c => { TrackDevice(c); CrouchPressed?.Invoke(); };
             map.FindAction("DebugWaves", true).performed += c => DebugWavesPressed?.Invoke();
-            map.FindAction("Interact", true).performed += c => { TrackDevice(c); InteractPressed?.Invoke(); };
+            interact = map.FindAction("Interact", true);
+            interact.performed += c => { TrackDevice(c); InteractPressed?.Invoke(); };
             look = map.FindAction("Look", true);
             lookDelta = map.FindAction("LookDelta", true);
             look.performed += TrackDevice;

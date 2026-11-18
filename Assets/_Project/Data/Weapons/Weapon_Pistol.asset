@@ -16,12 +16,23 @@ MonoBehaviour:
   prefab: {fileID: 1036437582284551511, guid: 544c49e1b807d284da303b18daf09aa5, type: 3}
   stance: 0
   holster: 0
-  visualScale: 1.4
+  visualScale: 1
   gripOffset: {x: 0, y: -0.01, z: 0.075}
+  pistolWristLocal: {x: 0.022, y: -0.012, z: -0.105}
+  pistolHandDir: {x: -0.1, y: -0.3, z: 0.95}
+  pistolPalmDir: {x: -0.95, y: 0, z: 0.3}
+  pistolSupportWrist: {x: -0.045, y: -0.085, z: -0.085}
+  pistolSupportDir: {x: 0.45, y: 0.05, z: 0.89}
+  pistolSupportPalm: {x: 0.8, y: 0.55, z: -0.2}
   shoulderOffset: {x: -0.02, y: -0.08, z: 0.3}
   lowReadyPitch: 40
   rightWristOffset: {x: 0.025, y: -0.035, z: -0.05}
   leftWristOffset: {x: -0.03, y: -0.05, z: -0.04}
+  aimShoulderOffset: {x: -0.09, y: -0.03, z: 0.25}
+  rifleRightHandDir: {x: -0.1, y: -0.3, z: 0.95}
+  rifleRightPalm: {x: -0.95, y: 0, z: 0.3}
+  rifleLeftHandDir: {x: 0.3, y: 0.1, z: 0.95}
+  rifleLeftPalm: {x: -0.25, y: 0.95, z: 0.1}
   aimMoveSpeedMultiplier: 1
   aimLineLength: 9
   damage: 20
@@ -34,7 +45,15 @@ MonoBehaviour:
   magazineSize: 12
   reserveAmmo: -1
   reloadTime: 1.2
-  recoilKick: 0.05
-  recoilPitch: 8
-  recoilShake: 0.12
+  recoilKick: 0.06
+  recoilPitch: 9
+  recoilShake: 0.1
   sound: 0
+  cameraKickUp: 1.4
+  cameraKickSide: 0.2
+  cameraRecoverSpeed: 14
+  cameraRecoverDelay: 0.06
+  cameraKickMax: 5
+  aimFov: 44
+  aimSensitivityScale: 1.1
+  killHitStop: 0.05

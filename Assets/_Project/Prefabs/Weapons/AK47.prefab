@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.Combat.Weapon
   muzzle: {fileID: 1875419798949311725}
   supportHand: {fileID: 6513742134472553099}
+  magazine: {fileID: 6375913989490507525}
 --- !u!1001 &2099353524857898573
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -112,6 +113,11 @@ Transform:
 --- !u!4 &1921031072345481638 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f22a4179686a99c4ea707e73874bcb48, type: 3}
+  m_PrefabInstance: {fileID: 2099353524857898573}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6375913989490507525 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4226156463210825400, guid: f22a4179686a99c4ea707e73874bcb48, type: 3}
   m_PrefabInstance: {fileID: 2099353524857898573}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &6513742134472553099 stripped

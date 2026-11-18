@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c88991a12a4557b44a902c8ac8cd881d, type: 3}
+  m_Name: Item_RifleAmmo
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.ItemDefinition
+  displayName: "\u5C0F\u9283\u5F3E\uFF0830 \u767A\uFF09"
+  description: "AK47 \u306B\u4F7F\u3048\u308B\u5F3E\u306E\u7BB1\u3002\u4F7F\u3046\u3068\u4E88\u5099\u306E\u5F3E\u304C
+    30 \u767A\u5897\u3048\u308B\u3002"
+  category: 1
+  weight: 0.6
+  heal: 0
+  ammoFor: {fileID: 11400000, guid: 50a804284606e9b44ba42357394a7fa7, type: 2}
+  ammoAmount: 30
+  worldModel: {fileID: 919132149155446097, guid: e9f367db71b80ab4599f5e22b17112fb, type: 3}

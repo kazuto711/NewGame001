@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68b8eef5a256bb94491efba66821a582, type: 3}
+  m_Name: Loot_Tools
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.LootTable
+  entries:
+  - item: {fileID: 11400000, guid: 0ee1dc90ddab46a40bd7d33673236cfc, type: 2}
+    chance: 0.8
+    min: 1
+    max: 3
+  - item: {fileID: 11400000, guid: 127abb343495f5e45a351b1a7e900332, type: 2}
+    chance: 0.6
+    min: 1
+    max: 2
+  - item: {fileID: 11400000, guid: 50bebdffb2e2aa84d96f6879e78cb5cd, type: 2}
+    chance: 0.25
+    min: 1
+    max: 1
+  emptyChance: 0

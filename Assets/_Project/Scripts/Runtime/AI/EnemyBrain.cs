@@ -16,7 +16,7 @@ namespace Matoi.AI
     [RequireComponent(typeof(CharacterMotor), typeof(Health))]
     public class EnemyBrain : MonoBehaviour
     {
-        public enum State { Idle, Chase, Windup, Attack, Stagger, Return, Dead }
+        public enum State { Idle, Chase, Windup, Attack, Stagger, Return, Dead, Search }
 
         [SerializeField] EnemyDefinition definition;
 
@@ -26,6 +26,7 @@ namespace Matoi.AI
         CharacterMotor motor;
         MeleeAttack melee;
         HitReaction reaction;
+        CharacterAnimator characterAnimator;
         Health health;
         Transform target;
         Health targetHealth;
@@ -50,14 +51,53 @@ namespace Matoi.AI
         /// <summary>攻撃の前の「ため」を行った回数（テスト・調整用）</summary>
         public int WindupCount { get; private set; }
 
+        // ---- ステルス ----
+        const float SuspiciousAt = 0.35f;
+        Vector3 searchPoint;
+        float lostSightTime, searchWaitStart = -10f;
+
+        /// <summary>しゃがんだプレイヤーへの警戒度（0〜1）。1 で発見。</summary>
+        public float Awareness { get; private set; }
+        /// <summary>プレイヤーを見つけて追っているか。</summary>
+        public bool IsHuntingPlayer => aggro && Current != State.Dead && Current != State.Return && Current != State.Idle && Current != State.Search;
+        /// <summary>怪しんでいるか（調べに来ている、または見られかけている）。</summary>
+        public bool IsSuspicious => Current == State.Search || Awareness >= SuspiciousAt;
+        /// <summary>プレイヤーに気づいていないか（隠密攻撃が決まる条件）。</summary>
+        public bool IsUnawareOfPlayer => !aggro && Current != State.Dead;
+
+        /// <summary>音を聞く。届く距離なら、音のした場所を調べに行く。</summary>
+        public void HearNoise(Vector3 position, float radius)
+        {
+            if (aggro || Current == State.Dead || radius <= 0f) return;
+            if (Flat(position - transform.position).magnitude > radius) return;
+            searchPoint = position;
+            Awareness = Mathf.Max(Awareness, SuspiciousAt);
+            Enter(State.Search);
+        }
+
+        /// <summary>気づいていない敵への、しゃがんだプレイヤーの攻撃は倍率が掛かる。</summary>
+        DamageInfo ApplySneakBonus(DamageInfo info)
+        {
+            var stealth = Matoi.Player.PlayerStealth.Instance;
+            if (stealth && stealth.IsSneaking && info.source == stealth.gameObject && IsUnawareOfPlayer)
+            {
+                float multiplier = info.isMelee ? stealth.meleeMultiplier : stealth.gunMultiplier;
+                info.amount *= multiplier;
+                stealth.NotifySneakAttack(multiplier);
+            }
+            return info;
+        }
+
         void Awake()
         {
             motor = GetComponent<CharacterMotor>();
             melee = GetComponent<MeleeAttack>();
             reaction = GetComponent<HitReaction>();
+            characterAnimator = GetComponent<CharacterAnimator>();
             health = GetComponent<Health>();
             path = new NavMeshPath();
             ApplyDefinition();
+            health.DamageFilter = ApplySneakBonus;
             health.OnDamaged += info =>
             {
                 if (definition.aggroOnDamage && info.source && !Health.AreAllies(gameObject, info.source)) aggro = true;
@@ -122,9 +162,23 @@ namespace Matoi.AI
 
             switch (Current)
             {
+                case State.Search:
+                    if (targetAlive && (aggro || Notices(dist))) { aggro = true; Awareness = 1f; Enter(State.Chase); break; }
+                    // 怪しい場所まで歩いて、しばらく見回してから持ち場へ戻る
+                    if (Flat(searchPoint - transform.position).magnitude > 1.2f && StateTime < definition.searchTime + 6f)
+                        MoveTowards(searchPoint, false);
+                    else
+                    {
+                        motor.SetIntent(new MoveIntent { facing = Quaternion.Euler(0f, Mathf.Sin(StateTime * 1.5f) * 70f, 0f) * transform.forward });
+                        if (searchWaitStart < stateStart) searchWaitStart = Time.time;
+                        if (Time.time - searchWaitStart > definition.searchTime) Enter(State.Return);
+                    }
+                    break;
+
                 case State.Idle:
                 case State.Return:
-                    if (targetAlive && (aggro || Notices(dist))) { aggro = true; Enter(State.Chase); break; }
+                    if (targetAlive && (aggro || Notices(dist))) { aggro = true; Awareness = 1f; Enter(State.Chase); break; }
+                    if (Current == State.Idle && Awareness >= SuspiciousAt && targetAlive) { searchPoint = target.position; Enter(State.Search); break; }
                     if (Current == State.Return)
                     {
                         Vector3 toHome = Flat(home - transform.position);
@@ -140,11 +194,30 @@ namespace Matoi.AI
                     break;
 
                 case State.Chase:
-                    if (!targetAlive || dist > definition.loseRange) { aggro = false; Enter(State.Return); break; }
+                    if (!targetAlive || dist > definition.loseRange) { aggro = false; Awareness = 0f; Enter(State.Return); break; }
+                    // しゃがんで物陰に隠れ続けると、見失ってあきらめる
+                    var sneaker = Matoi.Player.PlayerStealth.Instance;
+                    if (sneaker && sneaker.IsSneaking && !CanSeeTarget() && dist > definition.hearRange)
+                    {
+                        lostSightTime += Time.deltaTime;
+                        if (lostSightTime >= definition.giveUpTime)
+                        {
+                            aggro = false;
+                            lostSightTime = 0f;
+                            Awareness = SuspiciousAt;
+                            searchPoint = target.position;
+                            Enter(State.Search);
+                            break;
+                        }
+                    }
+                    else lostSightTime = 0f;
                     if (dist <= definition.attackRange && Time.time >= nextAttack)
                     {
                         Enter(State.Windup);
                         WindupCount++;
+                        // 腕を振りかぶる動きを、ための時間から攻撃の終わりまで通して再生する
+                        if (characterAnimator && melee)
+                            characterAnimator.PlayAction("EnemyAttack", definition.windupTime + melee.duration);
                         motor.AddImpulse(-dirToTarget * 1.2f); // 少し身を引く＝攻撃の合図
                         break;
                     }
@@ -156,7 +229,7 @@ namespace Matoi.AI
                     motor.SetIntent(new MoveIntent { facing = dirToTarget });
                     if (StateTime >= definition.windupTime)
                     {
-                        if (melee) melee.TryAttack(dirToTarget);
+                        if (melee) melee.TryAttack(dirToTarget, playAnimation: false);
                         nextAttack = Time.time + definition.attackCooldown;
                         Enter(State.Attack);
                     }
@@ -171,15 +244,41 @@ namespace Matoi.AI
 
         bool Notices(float dist)
         {
+            var stealth = Matoi.Player.PlayerStealth.Instance;
+            if (stealth && stealth.IsSneaking) return NoticesSneakingPlayer(stealth, dist);
+            Awareness = Mathf.MoveTowards(Awareness, 0f, Time.deltaTime / definition.awarenessDecayTime);
             if (dist <= definition.hearRange) return true;
             if (dist > definition.detectRange) return false;
             return CanSeeTarget();
         }
 
+        /// <summary>しゃがんでいるプレイヤーは、見られ続ける・足音を聞かれると、少しずつ気づかれる。</summary>
+        bool NoticesSneakingPlayer(Matoi.Player.PlayerStealth stealth, float dist)
+        {
+            float sightRange = definition.detectRange * definition.sneakSightScale;
+            Vector3 toPlayer = Flat(target.position - transform.position);
+            bool inView = dist <= sightRange && Vector3.Angle(transform.forward, toPlayer) <= definition.sneakFieldOfView * 0.5f;
+            bool seen = inView && CanSeeTarget();
+            bool heard = dist <= stealth.FootstepNoise;
+
+            if (seen || heard)
+            {
+                // 近いほど早く気づく。止まっていると気づかれにくい
+                float nearness = Mathf.Lerp(1f, 0.25f, Mathf.InverseLerp(1.5f, sightRange, dist));
+                float stillness = motor && target.TryGetComponent<CharacterMotor>(out var playerMotor) && playerMotor.Speed < 0.1f ? 0.45f : 1f;
+                float rate = seen ? nearness * stillness : 0.35f;
+                Awareness = Mathf.Min(1f, Awareness + rate / definition.sneakDetectTime * Time.deltaTime);
+            }
+            else Awareness = Mathf.MoveTowards(Awareness, 0f, Time.deltaTime / definition.awarenessDecayTime);
+            return Awareness >= 1f;
+        }
+
         bool CanSeeTarget()
         {
             Vector3 eye = transform.position + Vector3.up * 1.6f;
-            Vector3 chest = target.position + Vector3.up * 1.2f;
+            var stealth = Matoi.Player.PlayerStealth.Instance;
+            // しゃがんでいると胸の位置が低くなり、低い塀にも隠れられる
+            Vector3 chest = target.position + Vector3.up * (stealth && stealth.IsSneaking ? 0.7f : 1.2f);
             if (!Physics.Linecast(eye, chest, out var hit, ~0, QueryTriggerInteraction.Ignore)) return true;
             return hit.collider.GetComponentInParent<Health>() == targetHealth;
         }
@@ -235,6 +334,7 @@ namespace Matoi.AI
             if (reaction) reaction.Revive(); else health.ResetHealth();
             motor.Teleport(home, homeYaw);
             aggro = false;
+            Awareness = 0f;
             Enter(State.Idle);
         }
 
@@ -245,6 +345,7 @@ namespace Matoi.AI
             home = position;
             homeYaw = yaw;
             aggro = false;
+            Awareness = 0f;
             Enter(State.Idle);
         }
 

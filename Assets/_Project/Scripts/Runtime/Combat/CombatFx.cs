@@ -55,8 +55,8 @@ namespace Matoi.Combat
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = new Color(1f, 0.7f, 0.35f);
-            light.range = 3.5f;
-            light.intensity = 2.5f;
+            light.range = 2.5f;
+            light.intensity = 0.7f;   // 強すぎるとトゥーンの体全体が一色に白飛びする
             light.shadows = LightShadows.None;
             yield return new WaitForSeconds(0.04f);
             Destroy(go);

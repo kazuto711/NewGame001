@@ -144,6 +144,7 @@ namespace Matoi.EditorTools
             BuildForest(env);
             BuildVegetation(env);
             BuildBackdrop(env);
+            FieldContentSetup.Build(env);       // 採集・探索の中身と、追加の小物
 
             var lighting = Group("--- Lighting").transform;
             var sun = BuildSun(lighting);
@@ -290,7 +291,7 @@ namespace Matoi.EditorTools
             go.name = occluder ? $"House_{x}_{z}" : model;
             go.transform.position = new Vector3(x, 0f, z);
             Transform entrance = null;
-            foreach (var t in go.GetComponentsInChildren<Transform>()) if (t.name == "Entrance") entrance = t;
+            foreach (var t in go.GetComponentsInChildren<Transform>()) if (t.name.StartsWith("Entrance")) entrance = t;   // Blender が "Entrance.001" のように番号を振る
             if (entrance)
             {
                 Vector3 local = entrance.position - go.transform.position;
@@ -414,17 +415,11 @@ namespace Matoi.EditorTools
                 Beam("Wire", poles, tops[i].r, tops[i + 1].r, 0.035f, "Wire");
             }
 
-            Car(g, new Vector3(1.4f, 0, -6f), 24, 0);
-            Car(g, new Vector3(-1.6f, 0, 15f), -72, 9);
+            PlaceWreck("WreckedCar_White", g, new Vector3(1.4f, 0, -6f), new Vector3(0, 24, 0));
+            PlaceWreck("WreckedCar_Blue", g, new Vector3(-1.6f, 0, 15f), new Vector3(0, -72, 9));
 
             // 錆びたバス（北側の空き地）
-            var bus = Group("Bus", g).transform;
-            bus.localPosition = new Vector3(-12f, 0, 34f);
-            bus.localRotation = Quaternion.Euler(0, 78, 3);
-            Box("Body", bus, new Vector3(0, 1.6f, 0), new Vector3(2.5f, 2.6f, 9.5f), "Rust_Yellow");
-            Box("Windows_L", bus, new Vector3(-1.26f, 2.2f, 0.4f), new Vector3(0.04f, 0.9f, 7.6f), "Window_Dark");
-            Box("Windows_R", bus, new Vector3(1.26f, 2.2f, 0.4f), new Vector3(0.04f, 0.9f, 7.6f), "Window_Dark");
-            Box("Roof", bus, new Vector3(0, 2.95f, 0), new Vector3(2.3f, 0.12f, 9.2f), "Rust");
+            PlaceWreck("WreckedBus", g, new Vector3(-12f, 0, 34f), new Vector3(0, 78, 3));
 
             // ドラム缶
             Barrels(g, new Vector3(5.6f, 0, -9f), 5);
@@ -432,14 +427,18 @@ namespace Matoi.EditorTools
             Barrels(g, new Vector3(18f, 0, -8f), 3);
         }
 
-        static void Car(Transform parent, Vector3 pos, float rotY, float tiltZ)
+        const string WreckDir = "Assets/_Project/Art/Environment/Wrecks";
+
+        /// <summary>Blender で作った廃車・ドラム缶を置く（Tools/Blender/build_wreck_props.py）。</summary>
+        static GameObject PlaceWreck(string model, Transform parent, Vector3 localPos, Vector3 euler)
         {
-            var car = Group("WreckedCar", parent).transform;
-            car.localPosition = pos;
-            car.localRotation = Quaternion.Euler(0, rotY, tiltZ);
-            Box("Body", car, new Vector3(0, 0.55f, 0), new Vector3(1.8f, 0.75f, 4.3f), "Rust");
-            Box("Cabin", car, new Vector3(0, 1.2f, -0.3f), new Vector3(1.6f, 0.6f, 2.2f), "Rust");
-            Box("Glass", car, new Vector3(0, 1.2f, 0.82f), new Vector3(1.5f, 0.5f, 0.04f), "Window_Dark", new Vector3(-30, 0, 0));
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{WreckDir}/{model}.fbx");
+            if (prefab == null) { Debug.LogError("[Matoi] モデルがありません: " + model); return null; }
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            go.name = model;
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = Quaternion.Euler(euler) * prefab.transform.localRotation;
+            return go;
         }
 
         static void Barrels(Transform parent, Vector3 center, int count)
@@ -449,11 +448,15 @@ namespace Matoi.EditorTools
             for (int i = 0; i < count; i++)
             {
                 var p = new Vector3(R(-1.2f, 1.2f), 0, R(-1.2f, 1.2f));
-                string m = rng.NextDouble() < 0.6 ? "Rust" : "Barrel_Blue";
-                if (rng.NextDouble() < 0.25)
-                    Cyl("Barrel_Fallen", g, p + new Vector3(0, 0.3f, 0), 0.3f, 0.9f, m, new Vector3(90, R(0, 180), 0));
+                string m = rng.NextDouble() < 0.6 ? "Drum_Rust" : "Drum_Blue";
+                if (rng.NextDouble() < 0.25) // 倒れたドラム缶（原点が底なので、中心が来るよう横へずらす）
+                {
+                    float yaw = R(0, 180);
+                    var along = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+                    PlaceWreck(m, g, p + new Vector3(0, 0.3f, 0) - along * 0.45f, new Vector3(90, yaw, 0));
+                }
                 else
-                    Cyl("Barrel", g, p, 0.3f, 0.9f, m);
+                    PlaceWreck(m, g, p, new Vector3(0, i * 73f, 0)); // 乱数を増やさない（以降の木や草の配置が変わるため）
             }
         }
 

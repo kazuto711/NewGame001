@@ -19,6 +19,12 @@ MonoBehaviour:
   hearRange: 4
   loseRange: 28
   aggroOnDamage: 1
+  sneakFieldOfView: 110
+  sneakSightScale: 0.7
+  sneakDetectTime: 0.8
+  awarenessDecayTime: 4
+  searchTime: 3
+  giveUpTime: 4
   sprintDistance: 7
   attackRange: 1.7
   windupTime: 0.5

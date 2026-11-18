@@ -57,7 +57,7 @@ namespace Matoi.Tests
             Vector3 start = player.transform.position;
             Set(pad.leftStick, StickFor(Vector3.right));
             yield return null;
-            Press(pad.buttonSouth); yield return null; Release(pad.buttonSouth);
+            Press(pad.leftShoulder); yield return null; Release(pad.leftShoulder);
             yield return new WaitForSeconds(0.12f);
             health.TakeDamage(new DamageInfo { amount = 30f, direction = Vector3.left });
             bool rollAnim = animator.GetCurrentAnimatorStateInfo(animator.GetLayerIndex("Action")).IsName("Roll")
@@ -88,7 +88,7 @@ namespace Matoi.Tests
             // 「ため」を見てから横へ回避
             Set(pad.leftStick, StickFor(Vector3.right));
             yield return null;
-            Press(pad.buttonSouth); yield return null; Release(pad.buttonSouth);
+            Press(pad.leftShoulder); yield return null; Release(pad.leftShoulder);
             Set(pad.leftStick, Vector2.zero);
             yield return new WaitForSeconds(0.9f);
             Debug.Log($"[MatoiTest] dodge vs enemy: hp={health.Current} dodged={health.DodgedHits} windups={e.WindupCount}");

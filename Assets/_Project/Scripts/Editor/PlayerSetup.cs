@@ -127,6 +127,9 @@ namespace Matoi.EditorTools
                 p.gravity = -32f;
                 EditorUtility.SetDirty(p);
             }
+            p.canJump = false;    // 重い機体は跳べない・しゃがめない
+            p.canCrouch = false;
+            EditorUtility.SetDirty(p);
             if (p.cameraDistanceOffset == 0f) { p.cameraDistanceOffset = 4f; EditorUtility.SetDirty(p); }
             if (Mathf.Approximately(p.aimTurnSpeed, 720f)) { p.aimTurnSpeed = 240f; p.aimMoveSpeedFactor = 0.5f; EditorUtility.SetDirty(p); }
             return p;
@@ -169,25 +172,18 @@ namespace Matoi.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // 見た目：Visual（傾き用の親）の下にモデルを置く。当たり判定は親の CharacterController。
-            // モデルを差し替えるときは HeroSetup.HeroFbx を変えるだけでよい（Humanoid なのでアニメーションは共通）。
+            // 新旧モデルの切り替えは SurvivalHeroSetup（Humanoid なのでアニメーションは共通）。
             var visual = new GameObject("Visual");
             visual.transform.SetParent(root.transform, false);
             HeroSetup.Setup();
-            var model = (GameObject)PrefabUtility.InstantiatePrefab(HeroSetup.HeroModel);
-            model.name = "Model";
-            model.transform.SetParent(visual.transform, false);
-            var animator = model.GetComponent<Animator>();
-            if (!animator) animator = model.AddComponent<Animator>();
-            animator.runtimeAnimatorController = HeroSetup.Controller;
-            animator.avatar = HeroSetup.HeroAvatar;
-            animator.applyRootMotion = false;   // 移動は Motor が担当。アニメーションは見た目だけ
-            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
-                smr.updateWhenOffscreen = true;
+            SurvivalHeroSetup.Setup();
+            // 主人公の候補をすべて入れておき、PlayerModelSelector が起動時に 1 体を選ぶ。
+            // 各部品の Animator は、選ばれたモデルから起動時に探す（ここでは設定しない）。
+            var selector = root.AddComponent<PlayerModelSelector>();
+            selector.variants = BuildModelVariants(visual.transform);
 
             // M5: 武器（拳銃）を持つ・しまう・構える
             var holder = root.AddComponent<WeaponHolder>();
-            SetField(holder, "animator", animator);
             // 持ち物：1=拳銃、2=ライフル
             var hso = new SerializedObject(holder);
             var lo = hso.FindProperty("loadout");
@@ -201,10 +197,13 @@ namespace Matoi.EditorTools
             SetField(shooter, "holder", holder);
             SetField(shooter, "motor", motor);
             var melee = root.AddComponent<MeleeAttack>();
-            SetField(melee, "animator", animator);
             SetField(melee, "motor", motor);
+            melee.comboEnabled = true;   // プレイヤーだけ 3 段コンボ
             SetField(ctrl, "shooter", shooter);
             SetField(ctrl, "melee", melee);
+            var crosshair = root.AddComponent<Matoi.UI.Crosshair>(); // 三人称の照準マーク
+            SetField(crosshair, "holder", holder);
+            SetField(crosshair, "shooter", shooter);
 
             // M7: 体力・被弾反応・死亡と復活
             var health = root.AddComponent<Health>();
@@ -218,25 +217,16 @@ namespace Matoi.EditorTools
             reaction.flash = false;
             root.AddComponent<PlayerLife>();
             root.AddComponent<DodgeRoll>(); // M8: 回避（前転）
+            root.AddComponent<PlayerStealth>();             // しゃがみ中のステルス
+            root.AddComponent<Matoi.UI.StealthIndicator>(); // ［隠密］［警戒］［発見］の表示
 
-            // パワーアーマー：装甲部品を骨に付けておき（普段は非表示）、乗った時だけ表示する
-            var pieces = PowerArmorSetup.Fit(model, HeroSetup.HeroAvatar);
-            foreach (var p in pieces) p.SetActive(false);
+            // パワーアーマー：装甲部品は候補のモデルごとに骨へ付けてある（BuildModelVariants）
             var footsteps = root.AddComponent<Matoi.Equipment.PowerArmorFootsteps>();
-            SetField(footsteps, "animator", animator);
             SetField(footsteps, "motor", motor);
             var ram = root.AddComponent<Matoi.Equipment.PowerArmorRam>();
             SetField(ram, "motor", motor);
             var armorUser = root.AddComponent<Matoi.Equipment.PowerArmorUser>();
             var aso = new SerializedObject(armorUser);
-            var ap = aso.FindProperty("armorPieces");
-            ap.arraySize = pieces.Count;
-            for (int i = 0; i < pieces.Count; i++) ap.GetArrayElementAtIndex(i).objectReferenceValue = pieces[i];
-            var hide = model.GetComponentsInChildren<Renderer>()
-                .Where(r => r.name.Contains("Hair") || r.name.Contains("Beard") || r.name.Contains("Eyebrows")).ToArray();
-            var hp = aso.FindProperty("hideWhenArmored");
-            hp.arraySize = hide.Length;
-            for (int i = 0; i < hide.Length; i++) hp.GetArrayElementAtIndex(i).objectReferenceValue = hide[i];
             aso.FindProperty("visualRoot").objectReferenceValue = visual.transform;
             aso.FindProperty("armorProfile").objectReferenceValue = armor;
             aso.ApplyModifiedPropertiesWithoutUndo();
@@ -255,16 +245,73 @@ namespace Matoi.EditorTools
 
             var charAnim = root.AddComponent<CharacterAnimator>();
             SetField(charAnim, "motor", motor);
-            SetField(charAnim, "animator", animator);
             SetField(charAnim, "leanRoot", visual.transform);
             SetField(melee, "characterAnimator", charAnim);
             var caSo = new SerializedObject(charAnim);
             caSo.FindProperty("sprintClipSpeed").floatValue = HeroSetup.LastSpeeds.sprint;
+            caSo.FindProperty("useLocomotionTransitions").boolValue = true; // 停止・旋回・切り返しの動き
             caSo.ApplyModifiedPropertiesWithoutUndo();
+            root.AddComponent<LocomotionStabilizer>();   // 歩きの軸ぶれと上半身の揺れを抑える
+
+            // 採集・探索：持ち物、調べる操作、発見の記録、画面表示
+            root.AddComponent<Matoi.Items.Inventory>();
+            root.AddComponent<Matoi.Items.PlayerInteractor>();
+            root.AddComponent<Matoi.Items.ExplorationTracker>();
+            root.AddComponent<Matoi.UI.FieldHud>();
+            root.AddComponent<Matoi.UI.InventoryScreen>();
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // ---------- 主人公の候補 ----------
+        /// <summary>選択画面に並べる主人公を、Visual の下に置く。先頭が標準の主人公。</summary>
+        static PlayerModelSelector.Variant[] BuildModelVariants(Transform visual)
+        {
+            var options = new System.Collections.Generic.List<(string id, string label, GameObject asset, Avatar avatar, float back, float thigh)>();
+            void Add(string id, string label, GameObject asset, Avatar avatar, float back, float thigh)
+            {
+                if (asset && avatar && options.All(o => o.asset != asset)) options.Add((id, label, asset, avatar, back, thigh));
+            }
+            var mpfb = ("mpfb", "主人公（標準）", MpfbHeroSetup.Model, MpfbHeroSetup.Avatar, 0.2f, 0.10f);
+            var survival = ("survival", "主人公（変更前）", SurvivalHeroSetup.SurvivalModel, SurvivalHeroSetup.SurvivalAvatar, 0.42f, 0.11f);   // リュックの外側にライフルを掛ける
+            var first = MpfbHeroSetup.Enabled ? mpfb : survival;
+            var second = MpfbHeroSetup.Enabled ? survival : mpfb;
+            Add(first.Item1, first.Item2, first.Item3, first.Item4, first.Item5, first.Item6);
+            Add(second.Item1, second.Item2, second.Item3, second.Item4, second.Item5, second.Item6);
+            if (options.Count == 0) Add("hero", "主人公（旧）", HeroSetup.HeroModel, HeroSetup.HeroAvatar, 0.2f, 0.12f);
+
+            var result = new PlayerModelSelector.Variant[options.Count];
+            for (int i = 0; i < options.Count; i++)
+            {
+                var o = options[i];
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(o.asset);
+                model.name = i == 0 ? "Model" : "Model_" + o.id;
+                model.transform.SetParent(visual, false);
+                var animator = model.GetComponent<Animator>();
+                if (!animator) animator = model.AddComponent<Animator>();
+                animator.runtimeAnimatorController = HeroSetup.Controller;
+                animator.avatar = o.avatar;
+                animator.applyRootMotion = false;   // 移動は Motor が担当。アニメーションは見た目だけ
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
+                    smr.updateWhenOffscreen = true;
+
+                // パワーアーマー：装甲部品を骨に付けておき（普段は非表示）、乗った時だけ表示する
+                var pieces = PowerArmorSetup.Fit(model, o.avatar);
+                foreach (var p in pieces) p.SetActive(false);
+                var hidden = model.GetComponentsInChildren<Renderer>(true)
+                    .Where(r => new[] { "Hair", "Beard", "Eyebrows", "Eyeleash", "Eyelashes", "Backpack" }.Any(r.name.Contains)).ToArray();
+                model.SetActive(i == 0);
+                result[i] = new PlayerModelSelector.Variant
+                {
+                    id = o.id, displayName = o.label, model = model,
+                    armorPieces = pieces.ToArray(), hideWhenArmored = hidden,
+                    backHolsterDistance = o.back, thighHolsterOffset = o.thigh,
+                };
+            }
+            return result;
         }
 
         // ---------- 武器 ----------
@@ -293,6 +340,7 @@ namespace Matoi.EditorTools
             {
                 if (t.name == "Muzzle") { SetField(weapon, "muzzle", t); muzzle = t; }
                 if (t.name == "SupportHand") SetField(weapon, "supportHand", t);
+                if (t.name == "Magazine") SetField(weapon, "magazine", t);
             }
             // 銃口が +Z（前）に来るよう向きをそろえる。書き出し方によって前後が逆になることがあるため
             if (muzzle && root.transform.InverseTransformPoint(muzzle.position).z < 0f)
@@ -318,6 +366,20 @@ namespace Matoi.EditorTools
         static WeaponDefinition CreatePistol()
         {
             var def = LoadOrCreateWeapon(PistolData, out _);
+            def.visualScale = 1f;   // 実寸。拡大すると指が銃を突き抜ける
+            // 操作感：1 発の跳ね上がりは大きいが、すぐ元に戻る。軽くて取り回しが良い
+            def.recoilKick = 0.06f;
+            def.recoilPitch = 9f;
+            def.recoilShake = 0.10f;
+            def.cameraKickUp = 1.4f;
+            def.cameraKickSide = 0.2f;
+            def.cameraRecoverSpeed = 14f;
+            def.cameraRecoverDelay = 0.06f;
+            def.cameraKickMax = 5f;
+            def.aimFov = 44f;
+            def.aimSensitivityScale = 1.1f;
+            def.aimMoveSpeedMultiplier = 1f;
+            def.killHitStop = 0.05f;
             def.prefab = CreateWeaponPrefab(PistolFbx, PistolPrefab, "Pistol");
             EditorUtility.SetDirty(def);
             return def;
@@ -373,6 +435,28 @@ namespace Matoi.EditorTools
                 def.recoilShake = 0.09f;
                 def.sound = ShotSound.Rifle;
             }
+            def.shoulderOffset = new Vector3(-0.08f, -0.07f, 0.25f);       // 銃床の端を肩の前面に当てる（背中へ突き抜けない位置）
+            def.aimShoulderOffset = new Vector3(-0.09f, 0.015f, 0.25f);    // 狙う時は銃を上げ、頬を銃床に寄せる
+            // 両手の握り：右手はグリップを包み、左手はハンドガードを下から支える
+            def.rightWristOffset = new Vector3(0.028f, 0f, -0.085f);
+            def.rifleRightHandDir = new Vector3(-0.10f, -0.30f, 0.95f);
+            def.rifleRightPalm = new Vector3(-0.95f, 0f, 0.30f);
+            def.leftWristOffset = new Vector3(-0.04f, -0.025f, -0.10f);
+            def.rifleLeftHandDir = new Vector3(0.30f, 0.10f, 0.95f);
+            def.rifleLeftPalm = new Vector3(-0.25f, 0.95f, 0.10f);
+            // 操作感：1 発は小さいが、連射で上へ登り、戻りが遅い。重くて動きが鈍く、よく寄れる
+            def.recoilKick = 0.045f;
+            def.recoilPitch = 7f;
+            def.recoilShake = 0.16f;
+            def.cameraKickUp = 0.6f;
+            def.cameraKickSide = 0.35f;
+            def.cameraRecoverSpeed = 6f;
+            def.cameraRecoverDelay = 0.14f;
+            def.cameraKickMax = 5.5f;
+            def.aimFov = 38f;
+            def.aimSensitivityScale = 0.9f;
+            def.aimMoveSpeedMultiplier = 0.72f;
+            def.killHitStop = 0.07f;
             def.prefab = CreateWeaponPrefab(RifleFbx, RiflePrefab, "AK47");
             EditorUtility.SetDirty(def);
             return def;

@@ -48,6 +48,7 @@ namespace Matoi.Equipment
         MovementProfile humanProfile;
         float h0, r0, c0, stagger0, knock0;
         float mDamage, mKnock, mReach, mRadius, mHitStop, mShake;
+        bool mCombo;
         float dSpeed, dDuration;
         Vector2 dWindow;
 
@@ -56,6 +57,13 @@ namespace Matoi.Equipment
         public float Integrity => Current ? Current.Integrity : 0f;
         public int BreakCount { get; private set; }
         public event Action<bool> ArmorChanged;
+
+        /// <summary>選ばれた主人公のモデルに付いた装甲部品を使う。</summary>
+        public void SetModelParts(GameObject[] pieces, Renderer[] hidden)
+        {
+            armorPieces = pieces;
+            hideWhenArmored = hidden;
+        }
 
         void Awake()
         {
@@ -120,6 +128,8 @@ namespace Matoi.Equipment
             {
                 mDamage = melee.damage; mKnock = melee.knockback; mReach = melee.reach; mRadius = melee.radius;
                 mHitStop = melee.hitStop; mShake = melee.shake;
+                mCombo = melee.comboEnabled;
+                melee.comboEnabled = false;   // アーマーの拳は 1 発ごとに重い単発
                 melee.damage = punchDamage; melee.knockback = punchKnockback; melee.reach = punchReach;
                 melee.radius = punchRadius; melee.hitStop = 0.11f; melee.shake = 0.7f;
             }
@@ -161,6 +171,7 @@ namespace Matoi.Equipment
             {
                 melee.damage = mDamage; melee.knockback = mKnock; melee.reach = mReach; melee.radius = mRadius;
                 melee.hitStop = mHitStop; melee.shake = mShake;
+                melee.comboEnabled = mCombo;
             }
             if (dodge) { dodge.speed = dSpeed; dodge.duration = dDuration; dodge.invulnerableWindow = dWindow; }
             health.DamageFilter = null;

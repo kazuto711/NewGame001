@@ -36,6 +36,7 @@ namespace Matoi.Player
         HitReaction reaction;
         DodgeRoll dodge;
         Matoi.Equipment.PowerArmorUser armor;
+        Matoi.Items.PlayerInteractor interactor;
         bool sprintLatched, backpedal;
         Vector3 aimDir;
 
@@ -53,6 +54,7 @@ namespace Matoi.Player
             reaction = GetComponent<HitReaction>();
             dodge = GetComponent<DodgeRoll>();
             armor = GetComponent<Matoi.Equipment.PowerArmorUser>();
+            interactor = GetComponent<Matoi.Items.PlayerInteractor>();
             aimDir = transform.forward;
         }
 
@@ -67,6 +69,8 @@ namespace Matoi.Player
             input.WeaponSlotPressed += OnWeaponSlot;
             input.DodgePressed += OnDodgePressed;
             input.InteractPressed += OnInteractPressed;
+            input.JumpPressed += OnJumpPressed;
+            input.CrouchPressed += OnCrouchPressed;
         }
 
         void OnDisable()
@@ -80,18 +84,41 @@ namespace Matoi.Player
             input.WeaponSlotPressed -= OnWeaponSlot;
             input.DodgePressed -= OnDodgePressed;
             input.InteractPressed -= OnInteractPressed;
+            input.JumpPressed -= OnJumpPressed;
+            input.CrouchPressed -= OnCrouchPressed;
         }
 
-        /// <summary>E / ↑：近くのパワーアーマーに乗る・降りる。</summary>
+        bool Incapacitated => reaction && (reaction.IsStaggered || reaction.Health.IsDead);
+        bool IsArmored => armor && armor.IsArmored;
+
+        /// <summary>A / Space：ジャンプ（しゃがみ中は立ち上がって跳ぶ）。</summary>
+        void OnJumpPressed()
+        {
+            if (IsArmored || Incapacitated || IsMeleeAttacking || IsRolling) return;
+            motor.TryJump();
+        }
+
+        /// <summary>十字キー左 / C：しゃがむ・立つ（押すたびに切り替え）。</summary>
+        void OnCrouchPressed()
+        {
+            if (IsArmored || Incapacitated || IsRolling) return;
+            motor.SetCrouch(!motor.CrouchWanted);
+        }
+
+        /// <summary>E / ↑：近くの物を調べる。無ければパワーアーマーに乗る・降りる。</summary>
         void OnInteractPressed()
         {
-            if (!armor || IsMeleeAttacking || IsRolling) return;
+            if (IsMeleeAttacking || IsRolling) return;
+            if (interactor && interactor.Press()) return;
+            if (!armor) return;
+            motor.ForceStand();
             armor.TryInteract();
         }
 
         void OnDodgePressed()
         {
             if (!dodge || (reaction && (reaction.IsStaggered || reaction.Health.IsDead))) return;
+            motor.SetCrouch(false);
             // スティックの方向へ。倒していなければ体の正面へ
             Vector3 dir = ToWorld(input.Move);
             dodge.TryRoll(dir.sqrMagnitude > 0.04f ? dir : transform.forward);
@@ -99,11 +126,11 @@ namespace Matoi.Player
 
         public bool IsRolling => dodge && dodge.IsRolling;
 
-        void OnSprintPressed() => sprintLatched = true;
+        void OnSprintPressed() { sprintLatched = true; motor.SetCrouch(false); } // 走り出すと立ち上がる
         void OnDrawPressed()
         {
             // パワーアーマーの近くでは Y でも乗り込める（ゲームパッドで押しやすいように）
-            if (armor && !armor.IsArmored && armor.NearestAvailable()) { armor.TryInteract(); return; }
+            if (armor && !armor.IsArmored && armor.NearestAvailable()) { motor.ForceStand(); armor.TryInteract(); return; }
             if (weapons) weapons.ToggleDrawn();
         }
         void OnReloadPressed() { if (shooter && weapons && weapons.IsDrawn) shooter.Reload(); }
@@ -126,9 +153,11 @@ namespace Matoi.Player
             if (input == null) return;
             Vector2 stick = Vector2.ClampMagnitude(input.Move, 1f);
             Vector3 moveDir = ToWorld(stick);
+            if (input.SprintHeld && stick.sqrMagnitude > 0.01f) motor.SetCrouch(false);
+            if (reaction && reaction.Health.IsDead) motor.SetCrouch(false);
 
-            // 近接攻撃中・ひるみ中・死亡中は、移動・射撃をしない
-            if (IsMeleeAttacking || IsRolling || (reaction && (reaction.IsStaggered || reaction.Health.IsDead)))
+            // 近接攻撃中・ひるみ中・死亡中・採集中は、移動・射撃をしない
+            if (IsMeleeAttacking || IsRolling || (interactor && interactor.IsHolding) || (reaction && (reaction.IsStaggered || reaction.Health.IsDead)))
             {
                 if (weapons) weapons.SetAim(false, aimDir);
                 if (shooter) shooter.SetTrigger(false);
@@ -143,13 +172,24 @@ namespace Matoi.Player
             if (tp != null)
             {
                 // 三人称：右スティック／マウスはカメラを回す。構えは LT / 右クリック（撃つボタンでも構える）
-                // 狙う方向は（仮に）カメラの正面。照準・射線の本格対応は次の段階で行う
+                // 体はカメラの正面を向き、弾は「画面中央の先にある物」へ飛ぶ
                 aiming = input.AimHeld || fireHeld;
                 if (aiming) aimDir = tp.FlatForward;
+                if (weapons && weapons.CurrentWeapon)
+                {
+                    tp.AimFov = weapons.CurrentWeapon.aimFov;
+                    tp.AimSensitivityScale = weapons.CurrentWeapon.aimSensitivityScale;
+                }
+                if (weapons)
+                {
+                    weapons.SetAimPoint(aiming ? ScreenCenterAimPoint() : (Vector3?)null);
+                    weapons.ShowAimLine = false; // 三人称は照準マークで狙う
+                }
             }
             else
             {
                 // 見下ろし：右スティック＝狙う方向、マウス＝照準カーソル（従来どおり）
+                if (weapons) { weapons.SetAimPoint(null); weapons.ShowAimLine = true; }
                 Vector2 aimStick = input.AimStick;
                 bool stickAim = aimStick.magnitude > aimStickDeadzone;
                 // 撃つボタンだけ押しても、今の向き（直前の狙い）へ構えて撃てる
@@ -198,6 +238,50 @@ namespace Matoi.Player
 
             motor.SetIntent(intent);
         }
+
+        [Header("三人称の照準")]
+        [Tooltip("画面中央の先に何も無い時に狙う距離 (m)")]
+        [SerializeField] float maxAimDistance = 80f;
+        [Tooltip("この秒数撃たなければ、連射の反動の模様を最初からやり直す")]
+        [SerializeField] float recoilPatternReset = 0.35f;
+        int burstShots;
+        float lastShotTime = -10f;
+        readonly RaycastHit[] aimHits = new RaycastHit[16];
+
+        /// <summary>
+        /// 画面中央から真っすぐ先にある物の位置（照準点）。
+        /// カメラと主人公の間にある物（背後の壁など）は無視するため、主人公の位置から先だけを調べる。
+        /// </summary>
+        public Vector3 ScreenCenterAimPoint()
+        {
+            var cam = Camera.main;
+            if (!cam) return transform.position + transform.forward * 20f;
+            var ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            float skip = Mathf.Max(0f, Vector3.Dot(transform.position + Vector3.up * 1.2f - ray.origin, ray.direction)) + 0.5f;
+            Vector3 start = ray.GetPoint(skip);
+            int n = Physics.RaycastNonAlloc(start, ray.direction, aimHits, maxAimDistance, ~0, QueryTriggerInteraction.Ignore);
+            float best = maxAimDistance;
+            for (int i = 0; i < n; i++)
+            {
+                if (aimHits[i].collider.CompareTag("Player")) continue;
+                if (aimHits[i].distance < best) best = aimHits[i].distance;
+            }
+            return start + ray.direction * best;
+        }
+
+        void OnShotFired(WeaponDefinition def)
+        {
+            var tp = ThirdPerson;
+            if (tp == null || def == null) return;
+            burstShots = Time.time - lastShotTime > recoilPatternReset ? 0 : burstShots + 1;
+            lastShotTime = Time.time;
+            // 連射すると左右にゆっくり揺れながら上がる（覚えて抑えられる模様＋少しのばらつき）
+            float sideways = (Mathf.Sin(burstShots * 0.8f) + Random.Range(-0.35f, 0.35f)) * def.cameraKickSide;
+            tp.AddRecoil(def.cameraKickUp, sideways, def.cameraRecoverSpeed, def.cameraRecoverDelay, def.cameraKickMax);
+        }
+
+        void Start() { if (shooter) shooter.Fired += OnShotFired; }
+        void OnDestroy() { if (shooter) shooter.Fired -= OnShotFired; }
 
         /// <summary>今が三人称視点なら、そのカメラ。見下ろし視点なら null。</summary>
         static CameraSystem.ThirdPersonCameraController ThirdPerson =>

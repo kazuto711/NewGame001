@@ -30,5 +30,11 @@ MonoBehaviour:
   pivotDeceleration: 9
   inputSmoothing: 0.12
   cameraDistanceOffset: 4
+  canJump: 0
+  jumpHeight: 1.1
+  airControl: 0.35
+  canCrouch: 0
+  crouchSpeed: 1.7
+  crouchHeightRatio: 0.62
   gravity: -32
   maxFallSpeed: -40

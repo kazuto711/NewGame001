@@ -58,11 +58,89 @@ namespace Matoi.Characters
         public float TurnRate { get; private set; }
         public float DesiredSpeed { get; private set; }
 
+        // ---- ジャンプ・しゃがみ ----
+        const float CoyoteTime = 0.12f, JumpBufferTime = 0.12f, AirborneDelay = 0.12f;
+        float airTime, jumpBufferUntil = -1f, lastGroundedTime = -10f, standHeight;
+        bool crouchWanted;
+        readonly Collider[] headroomHits = new Collider[8];
+
+        /// <summary>ジャンプした瞬間。</summary>
+        public event System.Action Jumped;
+        /// <summary>着地した瞬間（引数は着地した時の落下の速さ m/秒）。</summary>
+        public event System.Action<float> Landed;
+        public bool IsCrouching { get; private set; }
+        /// <summary>しゃがもうとしているか（天井が低くて立てない間は IsCrouching のまま true）</summary>
+        public bool CrouchWanted => crouchWanted;
+        /// <summary>段差の小さな浮きを除いて、空中にいるか。</summary>
+        public bool IsAirborne => airTime > AirborneDelay;
+
         void Awake()
         {
             controller = GetComponent<CharacterController>();
             lastYaw = transform.eulerAngles.y;
+            standHeight = controller.height;
         }
+
+        /// <summary>ジャンプする（少し早く押しても、足場から落ちた直後でも受け付ける）。</summary>
+        public bool TryJump()
+        {
+            if (profile == null || !profile.canJump || IsDashing) return false;
+            if (IsCrouching)
+            {
+                crouchWanted = false;
+                if (!HasHeadroom()) return false;
+                ForceStand();
+            }
+            jumpBufferUntil = Time.time + JumpBufferTime;
+            return true;
+        }
+
+        /// <summary>しゃがむ／立つ。天井が低い場所では、立てるようになるまでしゃがんだままになる。</summary>
+        public void SetCrouch(bool value) => crouchWanted = value && profile != null && profile.canCrouch;
+
+        /// <summary>天井の確認をせず、すぐに立つ（パワーアーマーに乗る時など）。</summary>
+        public void ForceStand()
+        {
+            crouchWanted = false;
+            if (!IsCrouching) return;
+            ApplyHeight(standHeight);
+            IsCrouching = false;
+        }
+
+        void ApplyHeight(float height)
+        {
+            controller.height = height;
+            controller.center = new Vector3(controller.center.x, height * 0.5f, controller.center.z);
+        }
+
+        bool HasHeadroom()
+        {
+            float r = controller.radius * 0.9f;
+            Vector3 from = transform.position + Vector3.up * (controller.height - r);
+            Vector3 to = transform.position + Vector3.up * (standHeight - r);
+            int n = Physics.OverlapCapsuleNonAlloc(from, to, r, headroomHits, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+                if (!headroomHits[i].transform.IsChildOf(transform)) return false;
+            return true;
+        }
+
+        void UpdateCrouch()
+        {
+            if (crouchWanted && !IsCrouching)
+            {
+                standHeight = controller.height;
+                ApplyHeight(standHeight * profile.crouchHeightRatio);
+                IsCrouching = true;
+            }
+            else if (!crouchWanted && IsCrouching && HasHeadroom())
+            {
+                ApplyHeight(standHeight);
+                IsCrouching = false;
+            }
+        }
+
+        /// <summary>地上なら 1、空中なら airControl（空中では動きを変えにくい）。</summary>
+        float Control => controller.isGrounded ? 1f : profile.airControl;
 
         public void SetIntent(MoveIntent value) => intent = value;
 
@@ -126,6 +204,7 @@ namespace Matoi.Characters
             if (profile == null) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
+            UpdateCrouch();
 
             // 1) 入力をなめらかにする（スティックの細かいブレを吸収）
             Vector3 raw = Vector3.ClampMagnitude(new Vector3(intent.direction.x, 0f, intent.direction.z), 1f);
@@ -160,8 +239,18 @@ namespace Matoi.Characters
             else if (freeFacing) UpdateFreeFacing(dt, inputMag, facing.normalized);
             else UpdateFaceMovement(dt, inputMag);
 
-            // 5) 重力
-            if (controller.isGrounded && verticalSpeed < 0f) verticalSpeed = -2f;
+            // 5) ジャンプと重力
+            if (controller.isGrounded) lastGroundedTime = Time.time;
+            if (Time.time < jumpBufferUntil && Time.time - lastGroundedTime <= CoyoteTime && !IsDashing)
+            {
+                verticalSpeed = Mathf.Sqrt(2f * Mathf.Abs(profile.gravity) * profile.jumpHeight);
+                jumpBufferUntil = -1f;
+                lastGroundedTime = -10f;
+                airTime = AirborneDelay + 0.01f;
+                Jumped?.Invoke();
+            }
+            else if (controller.isGrounded && verticalSpeed < 0f) verticalSpeed = -2f;
+            float fallSpeed = -verticalSpeed;
             verticalSpeed = Mathf.Max(verticalSpeed + profile.gravity * dt, profile.maxFallSpeed);
 
             // 6) 移動
@@ -172,6 +261,13 @@ namespace Matoi.Characters
                 externalDamping * Mathf.Max(1f, externalVelocity.magnitude) * dt);
             controller.Move((horizontal + externalVelocity + Vector3.up * verticalSpeed) * dt);
             Velocity = controller.velocity;
+
+            if (controller.isGrounded)
+            {
+                if (IsAirborne) Landed?.Invoke(fallSpeed);
+                airTime = 0f;
+            }
+            else airTime += dt;
 
             float yaw = transform.eulerAngles.y;
             TurnRate = Mathf.DeltaAngle(lastYaw, yaw) / dt;
@@ -189,7 +285,7 @@ namespace Matoi.Characters
                 angleToInput = Vector3.Angle(forward, wantDir);
 
                 // 切り返し判定：走っている最中に、ほぼ反対方向へ入力した
-                if (!IsPivoting && angleToInput >= profile.pivotAngle && speed >= profile.pivotMinSpeed)
+                if (!IsPivoting && controller.isGrounded && angleToInput >= profile.pivotAngle && speed >= profile.pivotMinSpeed)
                     IsPivoting = true;
 
                 if (IsPivoting)
@@ -200,7 +296,7 @@ namespace Matoi.Characters
                 }
                 else
                 {
-                    float turn = profile.GetTurnSpeed(speed) * dt;
+                    float turn = profile.GetTurnSpeed(speed) * Control * dt;
                     Quaternion target = Quaternion.LookRotation(wantDir, Vector3.up);
                     transform.rotation = Quaternion.RotateTowards(transform.rotation, target, turn);
                 }
@@ -219,7 +315,8 @@ namespace Matoi.Characters
                 float rate = target > speed
                     ? (IsSprinting ? profile.sprintAcceleration : profile.acceleration)
                     : profile.deceleration;
-                speed = Mathf.MoveTowards(speed, target, rate * dt);
+                // 空中で入力を離しても、ジャンプの勢いはそのまま保つ
+                if (controller.isGrounded || inputMag > 0.01f) speed = Mathf.MoveTowards(speed, target, rate * Control * dt);
             }
         }
 
@@ -229,7 +326,8 @@ namespace Matoi.Characters
             IsPivoting = false;
             Vector3 want = inputMag > 0.01f ? smoothedInput / inputMag * DesiredSpeed : Vector3.zero;
             float rate = want.sqrMagnitude > planarVelocity.sqrMagnitude ? profile.acceleration : profile.deceleration;
-            planarVelocity = Vector3.MoveTowards(planarVelocity, want, rate * dt);
+            if (controller.isGrounded || inputMag > 0.01f)
+                planarVelocity = Vector3.MoveTowards(planarVelocity, want, rate * Control * dt);
             speed = planarVelocity.magnitude;
 
             Quaternion target = Quaternion.LookRotation(facing, Vector3.up);
@@ -239,6 +337,7 @@ namespace Matoi.Characters
         float ComputeDesiredSpeed(float inputMag)
         {
             if (inputMag < 0.01f) return 0f;
+            if (IsCrouching) return profile.crouchSpeed * Mathf.Clamp01(inputMag);
             if (intent.walk) return profile.walkSpeed * Mathf.Clamp01(inputMag / profile.walkInputThreshold);
             if (intent.sprint && inputMag > profile.walkInputThreshold) return profile.sprintSpeed;
             if (inputMag <= profile.walkInputThreshold)

@@ -73,6 +73,71 @@ namespace Matoi.Tests
         }
 
         [UnityTest]
+        public IEnumerator Holstered_WeaponsStayOutsideBody_AndFollowIt()
+        {
+            yield return LoadField();
+            Weapon pistol = weapons.WeaponInstance, rifle = null;
+            foreach (var w in motor.GetComponentsInChildren<Weapon>()) if (w != pistol) rifle = w;
+            Assert.IsNotNull(rifle, "ライフルが生成されていない");
+
+            yield return new WaitForSeconds(0.3f);
+            CheckHolsters(pistol, rifle, "idle");
+            Orbit("Holster_back", 180f, 2.2f);
+            Orbit("Holster_right", 90f, 2.2f);
+            Orbit("Holster_rear_quarter", 145f, 2.4f);
+
+            // 走っている間も、体にめり込まず付いてくる
+            Set(pad.leftStick, StickFor(Vector3.left));
+            for (int i = 0; i < 6; i++)
+            {
+                yield return new WaitForSeconds(0.17f);
+                CheckHolsters(pistol, rifle, "jog" + i);
+            }
+            Orbit("Holster_jog", 150f, 2.6f);
+        }
+
+        void CheckHolsters(Weapon pistol, Weapon rifle, string label)
+        {
+            Transform chest = Bone(HumanBodyBones.UpperChest), head = Bone(HumanBodyBones.Head);
+            Transform thigh = Bone(HumanBodyBones.RightUpperLeg), calf = Bone(HumanBodyBones.RightLowerLeg);
+            Transform rArm = Bone(HumanBodyBones.RightUpperArm), lArm = Bone(HumanBodyBones.LeftUpperArm);
+            Vector3 right = (rArm.position - lArm.position).normalized;
+            Vector3 up = (chest.position - Bone(HumanBodyBones.Spine).position).normalized;
+            Vector3 back = -Vector3.Cross(right, up).normalized;
+
+            float behind = Vector3.Dot(rifle.transform.position - chest.position, back);
+            float muzzleToHead = Vector3.Distance(rifle.Muzzle.position, head.position);
+            float muzzleBelowChest = chest.position.y - rifle.Muzzle.position.y;
+            Vector3 along = (calf.position - thigh.position).normalized;
+            float offLeg = Vector3.ProjectOnPlane(pistol.transform.position - thigh.position, along).magnitude;
+            float legAngle = Vector3.Angle(pistol.transform.forward, along);
+            Debug.Log($"[MatoiTest] holster {label}: behind={behind:0.00} muzzleToHead={muzzleToHead:0.00} muzzleBelowChest={muzzleBelowChest:0.00} offLeg={offLeg:0.00} legAngle={legAngle:0.0}");
+
+            Assert.Greater(behind, 0.15f, "ライフルが背中にめり込んでいる"); // リュックの有無でモデルごとに距離が違う
+            Assert.Greater(muzzleToHead, 0.5f, "ライフルの銃口が頭の近くにある");
+            Assert.Greater(muzzleBelowChest, 0.2f, "ライフルの銃口が下を向いていない");
+            Assert.That(offLeg, Is.InRange(0.07f, 0.16f), "拳銃が太ももから離れている／めり込んでいる");
+            Assert.Less(legAngle, 5f, "拳銃が太ももに沿っていない");
+            // 拳銃は太ももと一緒に傾くので、太ももに垂直な面の中で「前」と比べる
+            Vector3 legFront = Vector3.ProjectOnPlane(motor.transform.forward, along).normalized;
+            Assert.Greater(Vector3.Dot(pistol.transform.up, legFront), 0.9f, "拳銃のグリップが後ろを向いていない");
+        }
+
+        /// <summary>主人公の周りの、正面から yaw 度の位置から撮る。</summary>
+        void Orbit(string name, float yaw, float distance)
+        {
+            var go = new GameObject("TempOrbit");
+            var cam = go.AddComponent<Camera>();
+            cam.CopyFrom(Camera.main);
+            cam.fieldOfView = 40f;
+            Vector3 p = motor.transform.position + Vector3.up * 1.05f;
+            go.transform.position = p + Quaternion.Euler(0, yaw, 0) * motor.transform.forward * distance + Vector3.up * 0.25f;
+            go.transform.LookAt(p);
+            Render(cam, name);
+            Object.Destroy(go);
+        }
+
+        [UnityTest]
         public IEnumerator AimStick_TurnsAndPointsPistol()
         {
             yield return LoadField();

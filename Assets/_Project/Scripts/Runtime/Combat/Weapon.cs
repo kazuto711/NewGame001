@@ -11,9 +11,12 @@ namespace Matoi.Combat
         [SerializeField] Transform muzzle;
         [Tooltip("左手で支える位置（ライフルなど。無ければ片手扱い）")]
         [SerializeField] Transform supportHand;
+        [Tooltip("リロードで取り外す弾倉（別部品になっている武器のみ）")]
+        [SerializeField] Transform magazine;
 
         public Transform Muzzle => muzzle ? muzzle : transform;
         public Transform SupportHand => supportHand;
+        public Transform Magazine => magazine;
 
         void Reset()
         {
@@ -21,6 +24,7 @@ namespace Matoi.Combat
             {
                 if (t.name == "Muzzle") muzzle = t;
                 if (t.name == "SupportHand") supportHand = t;
+                if (t.name == "Magazine") magazine = t;
             }
         }
     }

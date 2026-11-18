@@ -88,6 +88,9 @@ namespace Matoi.Tests
             CloseUp("PA_front", 0f);
             CloseUp("PA_side", 90f);
             Shot("PA_game");
+            var visible = player.GetComponentsInChildren<Renderer>().Where(r => r.enabled && !r.GetComponentsInParent<Transform>().Any(t => t.name.StartsWith("PA_")));
+            Debug.Log("[MatoiTest] armor visible non-armor renderers: " + string.Join(", ", visible.Select(r => r.name)));
+            Assert.AreEqual(0, player.GetComponentsInChildren<Weapon>().Length, "しまった武器が装甲からはみ出している");
             Assert.IsTrue(armor.IsArmored);
             Assert.AreEqual("Move_PowerArmor", motor.Profile.name);
             Assert.AreEqual(16, pieces.Count(t => t.gameObject.activeInHierarchy), "装甲部品が表示されていない");

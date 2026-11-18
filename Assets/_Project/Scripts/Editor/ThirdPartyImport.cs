@@ -11,7 +11,7 @@ namespace Matoi.EditorTools
 {
     public class ThirdPartyImport : AssetPostprocessor
     {
-        static bool IsCharacter(string p) => p.Contains("/_Project/Art/Characters/");
+        static bool IsCharacter(string p) => p.Contains("/_Project/Art/Characters/") || p == SurvivalHeroSetup.Fbx;
         static bool IsAnimation(string p) => p.Contains("/_Project/Art/Animations/");
         static bool IsEnvironment(string p) => p.Contains("/_Project/Art/Environment/") || p.Contains("/_Project/Art/Weapons/")
                                                || p.Contains("/_Project/Art/Equipment/");
@@ -25,6 +25,8 @@ namespace Matoi.EditorTools
             mi.globalScale = 1f;
             mi.useFileScale = true;
             mi.bakeAxisConversion = true;   // Blender の軸の違いをモデルに焼き込む（Quaternius 推奨設定）
+            // Mixamo の「FBX for Unity」は軸が合っている。焼き込むと体が 180° 反転したアニメーションになる
+            if (p.Contains("/Animations/Mixamo/")) mi.bakeAxisConversion = false;
 
             if (IsCharacter(p) || IsAnimation(p))
             {
@@ -43,6 +45,18 @@ namespace Matoi.EditorTools
                 mi.materialSearch = ModelImporterMaterialSearch.Everywhere;
                 mi.addCollider = false;
             }
+        }
+
+        /// <summary>
+        /// survival_character と MPFB の試作モデルは後ろ向き（-Z）で取り込まれる。人型の基準姿勢は前向き（+Z）が前提で、
+        /// 逆のままだと腕の上下が反転するので、Avatar が作られる前のこの段階で 180° 回す（元の FBX は変更しない）。
+        /// </summary>
+        void OnPostprocessMeshHierarchy(GameObject root)
+        {
+            bool backward = (assetPath == SurvivalHeroSetup.Fbx && root.name == "root")
+                            || (assetPath == MpfbHeroSetup.Fbx && root.name == "Hero_Rig");
+            if (!backward) return;
+            root.transform.localRotation = Quaternion.Euler(0f, 180f, 0f) * root.transform.localRotation;
         }
 
         /// <summary>
@@ -76,7 +90,10 @@ namespace Matoi.EditorTools
             foreach (var c in clips)
             {
                 // "Armature|Armature|Idle_Loop" → "Idle_Loop"
-                c.name = c.takeName.Split('|').Last();
+                // Mixamo はどのファイルもテイク名が "mixamo.com" なので、ファイル名をアニメーション名にする
+                c.name = assetPath.Contains("/Animations/Mixamo/")
+                    ? System.IO.Path.GetFileNameWithoutExtension(assetPath)
+                    : c.takeName.Split('|').Last();
                 bool loop = c.name.EndsWith("_Loop");
                 c.loopTime = loop;
                 c.loopPose = false;
@@ -87,6 +104,14 @@ namespace Matoi.EditorTools
                 c.keepOriginalPositionY = true;
                 // 前後の移動は焼き込まない → 歩幅の速度（averageSpeed）を計測して足滑りを防ぐのに使う
                 c.lockRootPositionXZ = false;
+                if (assetPath.Contains("/Animations/Mixamo/"))
+                {
+                    // 旋回アニメの回転は体に焼き込まない。向きは Motor が回すので、足の踏みかえだけを使う
+                    c.lockRootRotation = !c.name.Contains("Turn");
+                    c.loopPose = loop;   // 待機の繰り返しのつなぎ目をなめらかにする
+                    // 走りの停止は深く踏ん張るので、足が地面に沈まないよう全体を少し持ち上げる
+                    if (c.name == "Mx_RunStop") c.heightOffset = -0.05f; // マイナスで上がる
+                }
             }
             mi.clipAnimations = clips;
         }

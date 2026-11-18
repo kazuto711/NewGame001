@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68b8eef5a256bb94491efba66821a582, type: 3}
+  m_Name: Loot_House
+  m_EditorClassIdentifier: Matoi.Runtime::Matoi.Items.LootTable
+  entries:
+  - item: {fileID: 11400000, guid: 867b5e22879ad484ba5361118f1ab29b, type: 2}
+    chance: 0.55
+    min: 1
+    max: 2
+  - item: {fileID: 11400000, guid: 558687d8448e6df45a54682717f3cb59, type: 2}
+    chance: 0.4
+    min: 1
+    max: 1
+  - item: {fileID: 11400000, guid: 303b5720bd11dab4d924f5f02fadf457, type: 2}
+    chance: 0.4
+    min: 1
+    max: 2
+  - item: {fileID: 11400000, guid: f2540cd6437ce2a4dbc8012b19d76725, type: 2}
+    chance: 0.6
+    min: 1
+    max: 2
+  - item: {fileID: 11400000, guid: 6a0f18db0f4a2ec47a276528265c3987, type: 2}
+    chance: 0.12
+    min: 1
+    max: 1
+  emptyChance: 0.05

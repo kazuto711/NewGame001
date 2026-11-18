@@ -96,12 +96,18 @@ MonoBehaviour:
   leanRoot: {fileID: 5220716866995029178}
   sprintClipSpeed: 7.3504705
   speedDampTime: 0.06
-  maxBankAngle: 9
-  bankFactor: 0.0035
-  maxPitchAngle: 6
-  pitchFactor: 0.9
-  leanSmoothing: 10
+  maxBankAngle: 5
+  bankFactor: 0.0025
+  bankDeadZone: 25
+  maxPitchAngle: 3.5
+  pitchFactor: 0.6
+  leanSmoothing: 7
   actionLayer: Action
+  useLocomotionTransitions: 0
+  runStopSpeed: 3
+  walkStopSpeed: 0.8
+  turnStepAngle: 30
+  turnStepCooldown: 0.45
 --- !u!114 &7433187950453192005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -141,6 +147,41 @@ MonoBehaviour:
   knockback: 6
   hitStop: 0.07
   shake: 0.35
+  comboEnabled: 0
+  comboWindow: 0.35
+  bufferFrom: 0.3
+  cancelAt: 0.72
+  combo:
+  - animation: 1
+    hitTime: 0.12
+    duration: 0.42
+    damageScale: 1
+    reachScale: 1
+    lungeScale: 0.8
+    knockbackScale: 0.5
+    hitStopScale: 0.8
+    shakeScale: 0.7
+    heavy: 0
+  - animation: 0
+    hitTime: 0.15
+    duration: 0.48
+    damageScale: 1.2
+    reachScale: 1.05
+    lungeScale: 1
+    knockbackScale: 0.7
+    hitStopScale: 1
+    shakeScale: 1
+    heavy: 0
+  - animation: 2
+    hitTime: 0.22
+    duration: 0.72
+    damageScale: 1.8
+    reachScale: 1.15
+    lungeScale: 1.4
+    knockbackScale: 1.6
+    hitStopScale: 1.8
+    shakeScale: 1.8
+    heavy: 1
 --- !u!114 &4126372813268900742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -160,6 +201,7 @@ MonoBehaviour:
   knockbackScale: 1
   staggerThreshold: 1
   staggerCooldown: 0
+  heavyStaggerScale: 1.8
   flash: 1
 --- !u!114 &8056642859492386924
 MonoBehaviour:

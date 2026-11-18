@@ -190,7 +190,31 @@ def plank_lines(b, x0, x1, y, z0, z1, m, spacing=0.22, along_x=True, depth=0.04)
             b.box((depth, x1 - x0, 0.035), (y, (x0 + x1) / 2, z), m)
 
 
+def hollow_walls(b, W, D, H, z0, m, T=0.2, gap=None, door_h=None, solid=False):
+    """中が空の 4 面の壁。正面（-y）の gap=(x0, x1) に入口を開ける。solid=True で当たり判定も作る。"""
+    hx, hy = W / 2, D / 2
+    def wall(size, loc):
+        b.box(size, loc, m)
+        if solid:
+            b.collider(size, loc)
+    wall((W, T, H), (0, hy - T / 2, z0 + H / 2))
+    for sx in (-1, 1):
+        wall((T, D, H), (sx * (hx - T / 2), 0, z0 + H / 2))
+    y = -hy + T / 2
+    if gap is None:
+        wall((W, T, H), (0, y, z0 + H / 2))
+        return
+    x0, x1 = gap
+    wall((x0 + hx, T, H), ((-hx + x0) / 2, y, z0 + H / 2))
+    wall((hx - x1, T, H), ((x1 + hx) / 2, y, z0 + H / 2))
+    if door_h is not None and door_h < H:
+        wall((x1 - x0, T, H - door_h), ((x0 + x1) / 2, y, z0 + (H + door_h) / 2))
+
+
 # ---------------------------------------------------------------- 民家
+RUIN_GAP = (-0.7, 1.5)   # 壊れた民家の入口（正面の壁が崩れた所）
+
+
 def build_minka(name="Minka", ruined=False):
     b = Builder(name)
     W, D, H = 10.0, 7.0, 2.9           # 幅・奥行・壁の高さ
@@ -199,18 +223,35 @@ def build_minka(name="Minka", ruined=False):
     b.box((W + 0.5, D + 0.5, 0.35), (0, 0, 0.175), "Stone")                       # 基礎石
     # 壁：下は板張り、上は漆喰
     wall_mat = "Plaster_Dirty" if ruined else "Plaster"
-    b.box((W, D, H), (0, 0, floor + H / 2), wall_mat)
-    b.box((W + 0.04, D + 0.04, 1.0), (0, 0, floor + 0.5), "Wood_Dark")
-    plank_lines(b, -hx, hx, -hy - 0.03, floor, floor + 1.0, "Wood_Light")
+    in_gap = (lambda x: RUIN_GAP[0] - 0.1 < x < RUIN_GAP[1] + 0.1) if ruined else (lambda x: False)
+    if ruined:
+        # 壊れた民家は中に入れる：壁を中空にして、床を張る
+        b.box((W - 0.2, D - 0.2, 0.1), (0, 0, floor - 0.05), "Wood_Light")
+        hollow_walls(b, W, D, H, floor, wall_mat, gap=RUIN_GAP, solid=True)            # 正面の壁は天井まで崩れている
+        hollow_walls(b, W + 0.04, D + 0.04, 1.0, floor, "Wood_Dark", T=0.1, gap=RUIN_GAP)
+    else:
+        b.box((W, D, H), (0, 0, floor + H / 2), wall_mat)
+        b.box((W + 0.04, D + 0.04, 1.0), (0, 0, floor + 0.5), "Wood_Dark")
+    if ruined:
+        plank_lines(b, -hx, RUIN_GAP[0], -hy - 0.03, floor, floor + 1.0, "Wood_Light")
+        plank_lines(b, RUIN_GAP[1], hx, -hy - 0.03, floor, floor + 1.0, "Wood_Light")
+    else:
+        plank_lines(b, -hx, hx, -hy - 0.03, floor, floor + 1.0, "Wood_Light")
     plank_lines(b, -hx, hx, hy + 0.03, floor, floor + 1.0, "Wood_Light")
     # 柱
     for x in [-hx + i * (W / 5) for i in range(6)]:
         for y in (-hy - 0.05, hy + 0.05):
+            if y < 0 and in_gap(x):
+                continue
             b.box((0.18, 0.12, H), (x, y, floor + H / 2), "Wood_Dark")
     for y in [-hy + i * (D / 3) for i in range(4)]:
         for x in (-hx - 0.05, hx + 0.05):
             b.box((0.12, 0.18, H), (x, y, floor + H / 2), "Wood_Dark")
-    b.box((W + 0.2, D + 0.2, 0.2), (0, 0, floor + H - 0.05), "Wood_Dark")         # 桁（軒下の横木）
+    if ruined:
+        hollow_walls(b, W + 0.2, D + 0.2, 0.2, floor + H - 0.15, "Wood_Dark", T=0.3)  # 桁（軒下の横木）
+        b.box((5.5, D, 0.12), (-2.25, 0, floor + H), "Wood_Grey")                  # 残った天井（右半分は抜けている）
+    else:
+        b.box((W + 0.2, D + 0.2, 0.2), (0, 0, floor + H - 0.05), "Wood_Dark")     # 桁（軒下の横木）
 
     # 正面（-y 側）：縁側とガラス戸
     ey = -hy - 0.65
@@ -219,10 +260,13 @@ def build_minka(name="Minka", ruined=False):
         b.box((0.12, 0.12, floor), (x, ey - 0.45, floor / 2), "Wood_Dark")        # 縁の束
     for i in range(8):                                                              # 戸（ガラスと障子）
         x = -hx + 1.0 + i * ((W - 2.0) / 8) + (W - 2.0) / 16
+        if in_gap(x) or in_gap(x - (W - 2.0) / 16):
+            continue
         b.box(((W - 2.0) / 8 - 0.06, 0.05, 1.75), (x, -hy - 0.04, floor + 0.05 + 0.9),
               "Glass" if i % 3 else "Shoji")
         b.box((0.05, 0.07, 1.8), (x - (W - 2.0) / 16, -hy - 0.06, floor + 0.95), "Wood_Dark")
-    b.box((W - 2.0, 0.08, 0.06), (0, -hy - 0.06, floor + 1.85), "Wood_Dark")
+    if not ruined:
+        b.box((W - 2.0, 0.08, 0.06), (0, -hy - 0.06, floor + 1.85), "Wood_Dark")
     # 縁側の上の庇（ひさし、トタン）
     b.box((W - 0.6, 1.6, 0.08), (0, ey - 0.15, floor + 2.25), "Tin_Blue" if not ruined else "Tin_Rust", (-14, 0, 0))
     # 側面の窓（格子）
@@ -242,14 +286,21 @@ def build_minka(name="Minka", ruined=False):
         b.prism(0.12, D, hr - floor - H, (sx * (hx - 0.05), 0, floor + H), wall_mat)
         b.box((0.06, 0.6, 0.35), (sx * (hx + 0.02), 0, floor + H + 0.7), "Opening")  # 換気口
     if ruined:
-        b.box((4.6, 3.6, 0.5), (2.6, -1.6, floor + H - 0.2), "Opening")             # 屋根の穴から見える暗がり
-        b.box((4.0, 3.2, 0.16), (2.4, -hy - 2.2, 1.0), "Kawara", (38, 8, -6))       # 落ちた屋根
+        b.box((2.6, 3.2, 0.16), (3.7, -hy - 2.2, 1.0), "Kawara", (38, 8, -6))       # 落ちた屋根（入口はふさがない）
         for k in range(14):                                                          # 瓦礫
-            b.box((0.5, 0.3, 0.12), (1.0 + (k * 0.37) % 3.8, -hy - 1.4 - (k * 0.53) % 2.0, 0.08),
+            b.box((0.5, 0.3, 0.12), (2.5 + (k * 0.37) % 2.3, -hy - 1.4 - (k * 0.53) % 2.0, 0.08),
                   "Kawara" if k % 2 else "Wood_Grey", (k * 13, k * 29, k * 41))
+        for k in range(8):                                                           # 室内に落ちた瓦礫
+            b.box((0.45, 0.3, 0.12), (2.6 + (k * 0.41) % 1.9, -2.4 + (k * 0.67) % 2.4, floor + 0.07),
+                  "Kawara" if k % 2 else "Lath", (k * 11, k * 37, k * 19))
+        b.box((1.8, 0.8, 0.24), (0.4, ey - 1.0, 0.12), "Stone")                      # 縁側へ上がる踏み石
         for (x, z, w, h) in ((-2.8, 2.0, 1.4, 0.8), (3.6, 2.6, 1.0, 0.6), (-0.6, 3.0, 0.8, 0.5)):  # 剥がれた壁
             b.box((w, 0.06, h), (x, -hy - 0.025, floor + z - 0.6), "Lath")
-    b.collider((W + 0.4, D + 0.4, H + floor), (0, 0, (H + floor) / 2))
+    if ruined:
+        b.collider((W + 0.4, D + 0.4, floor), (0, 0, floor / 2))                  # 床（壁の当たり判定は hollow_walls が作る）
+        b.collider((1.8, 0.8, 0.24), (0.4, ey - 1.0, 0.12))                       # 踏み石
+    else:
+        b.collider((W + 0.4, D + 0.4, H + floor), (0, 0, (H + floor) / 2))
     b.collider((W - 1.0, 1.2, floor + 0.05), (0, ey, (floor + 0.05) / 2))         # 縁側（段差として上れる）
     b.entrance((0, -hy - 1.5, 0))
     return b.finish()
@@ -260,26 +311,33 @@ def build_kura():
     b = Builder("Kura")
     W, D, H = 5.0, 4.2, 5.2
     hx, hy = W / 2, D / 2
+    gap = (0.45, 1.95)   # 入口（中央からずらしてある）
     b.box((W + 0.5, D + 0.5, 0.5), (0, 0, 0.25), "Stone")
-    b.box((W, D, H), (0, 0, 0.5 + H / 2), "Plaster")
+    hollow_walls(b, W, D, H, 0.5, "Plaster", gap=gap, door_h=2.2, solid=True)      # 蔵は中に入れる
     # 腰のなまこ壁（黒地に白い斜め格子）
-    b.box((W + 0.06, D + 0.06, 1.4), (0, 0, 0.5 + 0.7), "Namako")
+    hollow_walls(b, W + 0.06, D + 0.06, 1.4, 0.5, "Namako", T=0.1, gap=gap)
     for side in (-1, 1):
         for k in range(9):
             x = -hx + 0.3 + k * 0.55
+            if side < 0 and gap[0] - 0.45 < x < gap[1] + 0.45:
+                continue
             b.box((0.07, 0.04, 1.75), (x, side * (hy + 0.04), 1.2), "Plaster", (0, 45, 0))
             b.box((0.07, 0.04, 1.75), (x, side * (hy + 0.04), 1.2), "Plaster", (0, -45, 0))
-    b.box((W + 0.1, D + 0.1, 0.12), (0, 0, 0.5 + 1.42), "Plaster")
-    # 重い扉と小窓
-    b.box((1.4, 0.3, 2.2), (0, -hy - 0.12, 0.5 + 1.1), "Namako")
-    b.box((1.6, 0.36, 0.15), (0, -hy - 0.14, 0.5 + 2.3), "Plaster")
+    hollow_walls(b, W + 0.1, D + 0.1, 0.12, 0.5 + 1.36, "Plaster", T=0.1, gap=gap)
+    # 開いたままの重い扉・入口の枠・踏み石と小窓
+    dc = (gap[0] + gap[1]) / 2
+    b.box((1.4, 0.14, 2.2), (gap[0] - 0.75, -hy - 0.16, 0.5 + 1.1), "Namako")
+    b.box((1.8, 0.36, 0.15), (dc, -hy - 0.14, 0.5 + 2.3), "Plaster")
+    b.box((1.8, 0.7, 0.25), (dc, -hy - 0.55, 0.125), "Stone")
+    b.collider((1.8, 0.7, 0.25), (dc, -hy - 0.55, 0.125))
     for x in (-1.2, 1.2):
         b.box((0.7, 0.2, 0.7), (x, -hy - 0.08, 0.5 + 3.8), "Namako")
     b.box((W + 0.2, D + 0.2, 0.25), (0, 0, 0.5 + H - 0.1), "Plaster")
     hr = gable_roof(b, W, hy, H, 28, eave=0.7, gable_over=0.45, z0=0.5)
     for sx in (-1, 1):
         b.prism(0.12, D, hr - 0.5 - H, (sx * (hx - 0.05), 0, 0.5 + H), "Plaster")
-    b.collider((W + 0.4, D + 0.4, H + 0.5), (0, 0, (H + 0.5) / 2))
+    b.collider((W + 0.5, D + 0.5, 0.5), (0, 0, 0.25))                             # 床
+    b.collider((W + 0.4, D + 0.4, 0.4), (0, 0, 0.5 + H))                          # 天井
     b.entrance((0, -hy - 1.2, 0))
     return b.finish()
 

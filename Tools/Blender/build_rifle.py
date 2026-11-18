@@ -5,6 +5,7 @@
 #  - カメラなど不要なものを削除
 # 銃口は Blender の -Y 方向（Unity では +Z）。
 import sys
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -41,6 +42,49 @@ support = Vector((0.0, -0.29, min(v.z for v in guard) if guard else 0.0))
 for v in gun.data.vertices:
     v.co -= grip_top
 gun.data.update()
+
+# 弾倉を別の部品にする（リロードで外せるように）。一番大きな独立した塊が弾倉
+bpy.ops.object.mode_set(mode="EDIT")
+bm = bmesh.from_edit_mesh(gun.data)
+bm.verts.ensure_lookup_table()
+seen, islands = set(), []
+for start in bm.verts:
+    if start.index in seen:
+        continue
+    stack, island = [start], []
+    seen.add(start.index)
+    while stack:
+        vert = stack.pop()
+        island.append(vert)
+        for edge in vert.link_edges:
+            other = edge.other_vert(vert)
+            if other.index not in seen:
+                seen.add(other.index)
+                stack.append(other)
+    islands.append(island)
+mag_verts = max(islands, key=len)
+for face in bm.faces:
+    face.select_set(False)
+for vert in bm.verts:
+    vert.select_set(False)
+for vert in mag_verts:
+    vert.select_set(True)
+bm.select_flush(True)
+bmesh.update_edit_mesh(gun.data)
+bpy.ops.mesh.separate(type="SELECTED")
+bpy.ops.object.mode_set(mode="OBJECT")
+mag = next(o for o in bpy.data.objects if o.type == "MESH" and o is not gun)
+mag.name = "Magazine"
+# 弾倉の原点を、銃に差し込む上端の中心にする
+mag_top = max(v.co.z for v in mag.data.vertices)
+top_verts = [v.co for v in mag.data.vertices if v.co.z > mag_top - 0.02]
+pivot = sum(top_verts, Vector()) / len(top_verts)
+for v in mag.data.vertices:
+    v.co -= pivot
+mag.data.update()
+mag.location = pivot
+mag.parent = gun
+print("MAGAZINE verts=%d pivot=%s" % (len(mag.data.vertices), tuple(round(x, 3) for x in pivot)))
 
 for name, p in (("Muzzle", muzzle - grip_top), ("SupportHand", support - grip_top)):
     bpy.ops.object.empty_add(type="PLAIN_AXES", location=p)

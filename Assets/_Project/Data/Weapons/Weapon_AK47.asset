@@ -18,11 +18,22 @@ MonoBehaviour:
   holster: 1
   visualScale: 1
   gripOffset: {x: 0, y: -0.01, z: 0.075}
-  shoulderOffset: {x: -0.08, y: -0.07, z: 0.15}
+  pistolWristLocal: {x: 0.022, y: -0.012, z: -0.105}
+  pistolHandDir: {x: -0.1, y: -0.3, z: 0.95}
+  pistolPalmDir: {x: -0.95, y: 0, z: 0.3}
+  pistolSupportWrist: {x: -0.045, y: -0.085, z: -0.085}
+  pistolSupportDir: {x: 0.45, y: 0.05, z: 0.89}
+  pistolSupportPalm: {x: 0.8, y: 0.55, z: -0.2}
+  shoulderOffset: {x: -0.08, y: -0.07, z: 0.25}
   lowReadyPitch: 40
-  rightWristOffset: {x: 0.025, y: -0.035, z: -0.05}
-  leftWristOffset: {x: -0.03, y: -0.05, z: -0.18}
-  aimMoveSpeedMultiplier: 0.85
+  rightWristOffset: {x: 0.028, y: 0, z: -0.085}
+  leftWristOffset: {x: -0.04, y: -0.025, z: -0.1}
+  aimShoulderOffset: {x: -0.09, y: 0.015, z: 0.25}
+  rifleRightHandDir: {x: -0.1, y: -0.3, z: 0.95}
+  rifleRightPalm: {x: -0.95, y: 0, z: 0.3}
+  rifleLeftHandDir: {x: 0.3, y: 0.1, z: 0.95}
+  rifleLeftPalm: {x: -0.25, y: 0.95, z: 0.1}
+  aimMoveSpeedMultiplier: 0.72
   aimLineLength: 14
   damage: 24
   fireRate: 9
@@ -34,7 +45,15 @@ MonoBehaviour:
   magazineSize: 30
   reserveAmmo: 90
   reloadTime: 1.9
-  recoilKick: 0.035
-  recoilPitch: 5
-  recoilShake: 0.09
+  recoilKick: 0.045
+  recoilPitch: 7
+  recoilShake: 0.16
   sound: 1
+  cameraKickUp: 0.6
+  cameraKickSide: 0.35
+  cameraRecoverSpeed: 6
+  cameraRecoverDelay: 0.14
+  cameraKickMax: 5.5
+  aimFov: 38
+  aimSensitivityScale: 0.9
+  killHitStop: 0.07

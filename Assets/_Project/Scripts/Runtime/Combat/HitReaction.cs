@@ -24,6 +24,8 @@ namespace Matoi.Combat
         public float staggerThreshold = 1f;
         [Tooltip("一度ひるんだら、この秒数はひるまない（連射でハメ続けられないように）")]
         public float staggerCooldown = 0f;
+        [Tooltip("強い攻撃を受けた時、ひるむ時間に掛ける倍率")]
+        public float heavyStaggerScale = 1.8f;
         [Tooltip("白く光らせる")]
         public bool flash = true;
 
@@ -68,10 +70,26 @@ namespace Matoi.Combat
             if (!info.isMelee && Time.time < lastStagger + staggerTime + staggerCooldown) return;
             lastStagger = Time.time;
             StaggerCount++;
-            StaggeredUntil = Time.time + staggerTime;
+            float time = staggerTime * (info.heavy ? heavyStaggerScale : 1f);
+            StaggeredUntil = Time.time + time;
             if (melee) melee.Cancel();
-            if (characterAnimator) characterAnimator.PlayAction("Hit", staggerTime + 0.1f);
+            if (characterAnimator)
+            {
+                characterAnimator.SetHitDirection(info.heavy ? CharacterAnimator.HitHeavy : DirectionOf(info.direction));
+                characterAnimator.PlayAction("Hit", time + 0.1f);
+            }
             Reacted?.Invoke(info);
+        }
+
+        /// <summary>攻撃が来た方向（0=正面, 1=背後, 2=左, 3=右）。direction は攻撃が進んでくる向き。</summary>
+        int DirectionOf(Vector3 direction)
+        {
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 1e-4f) return CharacterAnimator.HitFront;
+            Vector3 from = -direction.normalized;
+            float front = Vector3.Dot(transform.forward, from), side = Vector3.Dot(transform.right, from);
+            if (Mathf.Abs(front) >= Mathf.Abs(side)) return front >= 0f ? CharacterAnimator.HitFront : CharacterAnimator.HitBack;
+            return side >= 0f ? CharacterAnimator.HitRight : CharacterAnimator.HitLeft;
         }
 
         void OnDied(DamageInfo info)

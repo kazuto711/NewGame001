@@ -15,6 +15,8 @@ namespace Matoi.Combat
         public float knockback;
         public GameObject source;
         public bool isMelee;
+        /// <summary>強い攻撃（相手が大きくよろける）</summary>
+        public bool heavy;
     }
 
     /// <summary>攻撃を受けられるもの（敵・プレイヤー・壊せる物）。</summary>

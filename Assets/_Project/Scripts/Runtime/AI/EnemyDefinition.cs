@@ -25,6 +25,20 @@ namespace Matoi.AI
         [Tooltip("撃たれたら、見えていなくても追いかける")]
         public bool aggroOnDamage = true;
 
+        [Header("ステルス（プレイヤーがしゃがんでいる時）")]
+        [Tooltip("視野の広さ（度）。この範囲の外にいるプレイヤーは見えない")]
+        public float sneakFieldOfView = 110f;
+        [Tooltip("しゃがんだプレイヤーが見える距離（detectRange に掛ける割合）")]
+        [Range(0.2f, 1f)] public float sneakSightScale = 0.7f;
+        [Tooltip("近くで見ている時に、警戒度が満タンになるまでの秒数")]
+        public float sneakDetectTime = 0.8f;
+        [Tooltip("警戒度が 0 に戻るまでの秒数")]
+        public float awarenessDecayTime = 4f;
+        [Tooltip("怪しい場所を調べる時間（秒）")]
+        public float searchTime = 3f;
+        [Tooltip("しゃがんだプレイヤーを見失ってから、あきらめるまでの秒数")]
+        public float giveUpTime = 4f;
+
         [Header("追跡")]
         [Tooltip("この距離より遠いと走る（ダッシュ）")]
         public float sprintDistance = 7f;

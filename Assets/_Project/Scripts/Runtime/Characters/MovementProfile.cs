@@ -57,6 +57,20 @@ namespace Matoi.Characters
         [Tooltip("このプロファイルの時にカメラを追加で引く距離 (m)。大きな機体ほど広く見せる")]
         public float cameraDistanceOffset = 0f;
 
+        [Header("ジャンプ")]
+        public bool canJump = true;
+        [Tooltip("ジャンプの高さ (m)")]
+        public float jumpHeight = 1.1f;
+        [Tooltip("空中で向きや速度を変えられる割合（0=変えられない, 1=地上と同じ）")]
+        [Range(0f, 1f)] public float airControl = 0.35f;
+
+        [Header("しゃがみ")]
+        public bool canCrouch = true;
+        [Tooltip("しゃがみ歩きの速さ (m/秒)")]
+        public float crouchSpeed = 1.7f;
+        [Tooltip("しゃがんだ時の当たり判定の高さ（立っている時に対する割合）")]
+        [Range(0.4f, 0.9f)] public float crouchHeightRatio = 0.62f;
+
         [Header("重力")]
         public float gravity = -25f;
         public float maxFallSpeed = -40f;

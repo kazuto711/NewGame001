@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Matoi.Runtime::Matoi.Combat.Weapon
   muzzle: {fileID: 1739568547104148713}
   supportHand: {fileID: 0}
+  magazine: {fileID: 0}
 --- !u!1001 &2233929271256088137
 PrefabInstance:
   m_ObjectHideFlags: 0
